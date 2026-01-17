@@ -30,10 +30,10 @@ export default function TabLayout() {
       <Tabs.Screen
         name="employeeMang"
         options={{
-          title: 'My office',
+          title: 'Employee Management',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
-              name={focused ? 'briefcase' : 'briefcase-outline'} 
+              name={focused ? 'person' : 'person-outline'} 
               size={28} 
               color={color} 
             />
