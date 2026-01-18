@@ -15,9 +15,9 @@ export default function TabLayout() {
         },
       }}>
       <Tabs.Screen
-        name="clocking"
+        name="recruiment"
         options={{
-          title: 'Clocking',
+          title: 'recruiment',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
               name={focused ? 'time' : 'time-outline'} 
@@ -27,13 +27,13 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="employee"
+       <Tabs.Screen
+        name="dashboard"
         options={{
-          title: 'Employee Management',
+          title: 'dashboard',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
-              name={focused ? 'person' : 'person-outline'} 
+              name={focused ? 'time' : 'time-outline'} 
               size={28} 
               color={color} 
             />

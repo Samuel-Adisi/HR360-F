@@ -9,6 +9,7 @@ export default function RootLayout() {
     <Stack>
       <Slot/>
       <Stack.Screen name="(clocking)" options={{ headerShown: false }} />
+      <Stack.Screen name="(admin)" options={{ headerShown: false }} />
     </Stack>
 
   );
