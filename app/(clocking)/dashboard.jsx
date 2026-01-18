@@ -1,21 +1,21 @@
-import React, { useState, useRef } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  StatusBar,
-  Dimensions,
-  Modal,
-  Image,
-  Animated,
-  Alert,
-  Switch,
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import React, { useRef, useState } from 'react';
+import {
+  Alert,
+  Animated,
+  Dimensions,
+  Image,
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {router} from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
 
@@ -121,8 +121,8 @@ export default function HRDashboard() {
 
   const menuItems = [
     { id: 'Dashboard', icon: 'grid-outline', label: 'Dashboard', hasSubmenu: true, submenu: ['Dashboard 1', 'Dashboard 2'] },
-    { id: 'Employees', icon: 'people-outline', label: 'Employees', hasSubmenu: true, submenu: ['All Employee', 'Add Employee', 'Edit Employee'] },
-    { id: 'Projects', icon: 'briefcase-outline', label: 'Projects', hasSubmenu: false },
+    { id: 'Employees', icon: 'people-outline', label: 'Employees', hasSubmenu: true, submenu: ['All-Employees', 'Add-Employee', 'Edit-Employee'] },
+    { id: 'Projects', icon: 'briefcase-outline', label: 'Projects', hasSubmenu: true, submenu: ['All-Projects', 'Add-Project'] },
     { id: 'Attendance', icon: 'calendar-outline', label: 'Attendance', hasSubmenu: false },
     { id: 'Clients', icon: 'person-outline', label: 'Clients', hasSubmenu: false },
     { id: 'LeaveManagement', icon: 'document-text-outline', label: 'Leave Management', hasSubmenu: false },
@@ -512,8 +512,10 @@ export default function HRDashboard() {
                   {item.hasSubmenu && expandedMenus[item.id] && (
                     <View style={styles.submenu}>
                       {item.submenu.map((sub, subIndex) => (
-                        <TouchableOpacity key={subIndex} style={styles.submenuItem} onPress={router.push(`/${item.label.toLowerCase()}`)}>
-                          <Text style={styles.submenuText}>{sub}</Text>
+                        <TouchableOpacity key={subIndex} style={styles.submenuItem} onPress={()=>{router.push(`/${sub.toLowerCase()}`)
+                        setSidebarVisible(false)
+                        }}>
+                          <Text style={styles.submenuText}>{sub.replace("-", " ")}</Text>
                         </TouchableOpacity>
                       ))}
                     </View>
