@@ -35,18 +35,12 @@ export default function HRDashboard() {
     Payroll: false,
     Job: false,
     Consultancy: false,
-    Widgets: false,
-    UI: false,
-    Icons: false,
-    Forms: false,
-    Tables: false,
     Email: false,
     Chat: false,
     Calendar: false,
     TaskBar: false,
     Portfolio: false,
     Others: false,
-    Charts: false,
   });
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -216,7 +210,7 @@ export default function HRDashboard() {
       icon: "people-outline",
       label: "Employees",
       hasSubmenu: true,
-      submenu: ["All-Employees", "Add-Employee", "Edit-Employee"],
+      submenu: ["All-Employees", "Add-Employee"],
     },
     {
       id: "Projects",
@@ -290,41 +284,7 @@ export default function HRDashboard() {
       hasSubmenu: true,
       submenu: ["Consultant List", "Add Consultant"],
     },
-    {
-      id: "Widgets",
-      icon: "apps-outline",
-      label: "Widgets",
-      hasSubmenu: true,
-      submenu: ["Chart Widgets", "Stats Widgets"],
-    },
-    {
-      id: "UI",
-      icon: "layers-outline",
-      label: "User Interface (UI)",
-      hasSubmenu: true,
-      submenu: ["Components", "Elements", "Buttons"],
-    },
-    {
-      id: "Icons",
-      icon: "sparkles-outline",
-      label: "Icons",
-      hasSubmenu: true,
-      submenu: ["Ionicons", "Material Icons"],
-    },
-    {
-      id: "Forms",
-      icon: "document-text-outline",
-      label: "Forms",
-      hasSubmenu: true,
-      submenu: ["Basic Forms", "Form Validation"],
-    },
-    {
-      id: "Tables",
-      icon: "grid",
-      label: "Tables",
-      hasSubmenu: true,
-      submenu: ["Basic Tables", "Data Tables"],
-    },
+
     {
       id: "Email",
       icon: "mail-outline",
@@ -362,13 +322,6 @@ export default function HRDashboard() {
       label: "Others",
       hasSubmenu: true,
       submenu: ["Todo List", "Notes", "FAQ"],
-    },
-    {
-      id: "Charts",
-      icon: "bar-chart-outline",
-      label: "Charts",
-      hasSubmenu: true,
-      submenu: ["Apex Charts", "Chart JS", "Morris Charts"],
     },
   ];
 

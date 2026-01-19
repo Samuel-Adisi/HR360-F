@@ -1,48 +1,80 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const EditEmployeeScreen = ({ navigation }) => {
+const EditProjectScreen = ({ navigation }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Dummy employee data
+  // Dummy project data
   const [formData, setFormData] = useState({
-    firstName: "Samuel",
-    lastName: "Adisi",
-    email: "samuel.adisi@company.com",
-    phone: "+1 555-0101",
-    dateOfBirth: "1990-05-15",
-    address: "123 Main Street",
-    city: "San Francisco",
-    state: "CA",
-    zipCode: "94105",
-    employeeId: "EMP001",
-    position: "Senior Developer",
-    department: "Technology",
-    hireDate: "2020-02-14",
-    employmentType: "Full-time",
-    workLocation: "Hybrid",
-    managerId: "2",
-    salary: "125000",
-    payFrequency: "Bi-weekly",
-    emergencyContact: "Jane Adisi",
-    emergencyPhone: "+1 555-0199",
-    notes: "Excellent team player with strong technical skills.",
+    name: "MarQ Angular 6",
+    clientName: "Donald Trump",
+    clientEmail: "donald@client.com",
+    clientPhone: "+1 555-0101",
+    startDate: "2019-01-15",
+    deadline: "2019-03-02",
+    budget: "150000",
+    status: "Active",
+    priority: "High",
+    category: "Web Development",
+    description:
+      "A comprehensive Angular 6 web application for marketing automation and customer relationship management.",
+    progress: 35,
+    teamLeader: "John Doe",
+    teamMembers: [
+      {
+        id: 1,
+        name: "John Doe",
+        image: "https://i.pravatar.cc/150?img=12",
+        role: "Team Leader",
+      },
+      {
+        id: 2,
+        name: "Jane Smith",
+        image: "https://i.pravatar.cc/150?img=45",
+        role: "Developer",
+      },
+      {
+        id: 3,
+        name: "Mike Brown",
+        image: "https://i.pravatar.cc/150?img=33",
+        role: "Designer",
+      },
+    ],
+    notes:
+      "Client prefers weekly updates. Critical milestone coming up in 2 weeks.",
   });
 
   const [errors, setErrors] = useState({});
+
+  const statusOptions = [
+    "Active",
+    "Pending",
+    "On Hold",
+    "Completed",
+    "Cancelled",
+  ];
+  const priorityOptions = ["Low", "Medium", "High", "Critical"];
+  const categoryOptions = [
+    "Web Development",
+    "Mobile App",
+    "Design",
+    "Marketing",
+    "Consulting",
+  ];
 
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -56,23 +88,17 @@ const EditEmployeeScreen = ({ navigation }) => {
     const newErrors = {};
 
     if (step === 1) {
-      if (!formData.firstName.trim())
-        newErrors.firstName = "First name is required";
-      if (!formData.lastName.trim())
-        newErrors.lastName = "Last name is required";
-      if (!formData.email.trim()) {
-        newErrors.email = "Email is required";
-      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-        newErrors.email = "Invalid email format";
+      if (!formData.name.trim()) newErrors.name = "Project name is required";
+      if (!formData.clientName.trim())
+        newErrors.clientName = "Client name is required";
+      if (formData.clientEmail && !/\S+@\S+\.\S+/.test(formData.clientEmail)) {
+        newErrors.clientEmail = "Invalid email format";
       }
-      if (!formData.phone.trim()) newErrors.phone = "Phone is required";
     } else if (step === 2) {
-      if (!formData.position.trim())
-        newErrors.position = "Position is required";
-      if (!formData.department.trim())
-        newErrors.department = "Department is required";
-      if (!formData.hireDate.trim())
-        newErrors.hireDate = "Hire date is required";
+      if (!formData.startDate.trim())
+        newErrors.startDate = "Start date is required";
+      if (!formData.deadline.trim())
+        newErrors.deadline = "Deadline is required";
     }
 
     setErrors(newErrors);
@@ -91,7 +117,7 @@ const EditEmployeeScreen = ({ navigation }) => {
 
   const handleUpdate = () => {
     if (validateStep(currentStep)) {
-      Alert.alert("Success", "Employee updated successfully!", [
+      Alert.alert("Success", "Project updated successfully!", [
         {
           text: "OK",
           onPress: () => navigation?.goBack(),
@@ -102,8 +128,8 @@ const EditEmployeeScreen = ({ navigation }) => {
 
   const handleDeleteConfirm = () => {
     Alert.alert(
-      "Delete Employee",
-      `Are you sure you want to delete ${formData.firstName} ${formData.lastName}? This action cannot be undone.`,
+      "Delete Project",
+      `Are you sure you want to delete "${formData.name}"? This action cannot be undone.`,
       [
         {
           text: "Cancel",
@@ -113,7 +139,7 @@ const EditEmployeeScreen = ({ navigation }) => {
           text: "Delete",
           style: "destructive",
           onPress: () => {
-            Alert.alert("Deleted", "Employee has been deleted");
+            Alert.alert("Deleted", "Project has been deleted");
             navigation?.goBack();
           },
         },
@@ -183,7 +209,7 @@ const EditEmployeeScreen = ({ navigation }) => {
                 currentStep >= step && styles.stepLabelActive,
               ]}
             >
-              {["Personal", "Employment", "Compensation", "Additional"][index]}
+              {["Basic", "Timeline", "Team", "Details"][index]}
             </Text>
           </TouchableOpacity>
           {step < 4 && (
@@ -212,7 +238,7 @@ const EditEmployeeScreen = ({ navigation }) => {
           options.multiline && styles.textArea,
           options.disabled && styles.inputDisabled,
         ]}
-        value={formData[field]}
+        value={formData[field]?.toString()}
         onChangeText={(text) => updateField(field, text)}
         placeholder={options.placeholder || `Enter ${label.toLowerCase()}`}
         keyboardType={options.keyboardType || "default"}
@@ -257,126 +283,195 @@ const EditEmployeeScreen = ({ navigation }) => {
     </View>
   );
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Active":
+        return "#34C759";
+      case "Pending":
+        return "#FF9500";
+      case "On Hold":
+        return "#FF3B30";
+      case "Completed":
+        return "#007AFF";
+      case "Cancelled":
+        return "#8E8E93";
+      default:
+        return "#999";
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case "Critical":
+        return "#FF3B30";
+      case "High":
+        return "#FF9500";
+      case "Medium":
+        return "#007AFF";
+      case "Low":
+        return "#34C759";
+      default:
+        return "#999";
+    }
+  };
+
   const renderStep1 = () => (
     <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false}>
-      <Text style={styles.stepTitle}>Personal Information</Text>
-      <Text style={styles.stepSubtitle}>Basic employee details</Text>
+      <Text style={styles.stepTitle}>Basic Information</Text>
+      <Text style={styles.stepSubtitle}>Project and client details</Text>
 
-      <View style={styles.row}>
-        {renderInput("First Name", "firstName", {
-          required: true,
-          halfWidth: true,
-        })}
-        {renderInput("Last Name", "lastName", {
-          required: true,
-          halfWidth: true,
-        })}
-      </View>
-
-      {renderInput("Email Address", "email", {
+      {renderInput("Project Name", "name", {
         required: true,
-        keyboardType: "email-address",
-        autoCapitalize: "none",
-        placeholder: "john.doe@company.com",
-      })}
-
-      {renderInput("Phone Number", "phone", {
-        required: true,
-        keyboardType: "phone-pad",
-        placeholder: "+1 (555) 000-0000",
-      })}
-
-      {renderInput("Date of Birth", "dateOfBirth", {
-        placeholder: "YYYY-MM-DD",
-        keyboardType: "numeric",
+        placeholder: "e.g., MarQ Angular 6",
       })}
 
       <View style={styles.divider} />
 
-      {renderInput("Street Address", "address", {
-        placeholder: "123 Main Street",
+      <Text style={styles.subsectionTitle}>Client Information</Text>
+
+      {renderInput("Client Name", "clientName", {
+        required: true,
+        placeholder: "e.g., Donald Trump",
       })}
 
-      <View style={styles.row}>
-        {renderInput("City", "city", { halfWidth: true })}
-        {renderInput("State", "state", { halfWidth: true, placeholder: "CA" })}
-      </View>
-
-      {renderInput("Zip Code", "zipCode", {
-        keyboardType: "numeric",
-        placeholder: "12345",
+      {renderInput("Client Email", "clientEmail", {
+        keyboardType: "email-address",
+        autoCapitalize: "none",
+        placeholder: "client@company.com",
       })}
+
+      {renderInput("Client Phone", "clientPhone", {
+        keyboardType: "phone-pad",
+        placeholder: "+1 (555) 000-0000",
+      })}
+
+      <View style={styles.divider} />
+
+      {renderPicker("Project Category", "category", categoryOptions)}
     </ScrollView>
   );
 
   const renderStep2 = () => (
     <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false}>
-      <Text style={styles.stepTitle}>Employment Details</Text>
-      <Text style={styles.stepSubtitle}>Job and department information</Text>
+      <Text style={styles.stepTitle}>Timeline & Budget</Text>
+      <Text style={styles.stepSubtitle}>
+        Project schedule and financial details
+      </Text>
 
-      {renderInput("Employee ID", "employeeId", {
-        placeholder: "Auto-generated or custom",
-        autoCapitalize: "characters",
-        disabled: true,
-      })}
+      <View style={styles.row}>
+        {renderInput("Start Date", "startDate", {
+          required: true,
+          placeholder: "YYYY-MM-DD",
+          keyboardType: "numeric",
+          halfWidth: true,
+        })}
+        {renderInput("Deadline", "deadline", {
+          required: true,
+          placeholder: "YYYY-MM-DD",
+          keyboardType: "numeric",
+          halfWidth: true,
+        })}
+      </View>
 
-      {renderInput("Position/Job Title", "position", {
-        required: true,
-        placeholder: "Senior Developer",
-      })}
-
-      {renderInput("Department", "department", {
-        required: true,
-        placeholder: "Technology",
-      })}
-
-      {renderInput("Hire Date", "hireDate", {
-        required: true,
-        placeholder: "YYYY-MM-DD",
+      {renderInput("Budget ($)", "budget", {
         keyboardType: "numeric",
+        placeholder: "150000",
       })}
 
-      {renderPicker("Employment Type", "employmentType", [
-        "Full-time",
-        "Part-time",
-        "Contract",
-        "Intern",
-      ])}
+      <View style={styles.divider} />
 
-      {renderPicker("Work Location", "workLocation", [
-        "Office",
-        "Remote",
-        "Hybrid",
-      ])}
+      {renderPicker("Status", "status", statusOptions, true)}
+      {renderPicker("Priority", "priority", priorityOptions, true)}
 
-      {renderInput("Reports To (Manager ID)", "managerId", {
-        keyboardType: "numeric",
-        placeholder: "Optional - Enter manager ID",
-      })}
+      <View style={styles.divider} />
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Progress</Text>
+        <View style={styles.progressControl}>
+          <TouchableOpacity
+            style={styles.progressButton}
+            onPress={() =>
+              updateField("progress", Math.max(0, formData.progress - 5))
+            }
+          >
+            <Ionicons name="remove" size={20} color="#007AFF" />
+          </TouchableOpacity>
+          <View style={styles.progressDisplay}>
+            <Text style={styles.progressText}>{formData.progress}%</Text>
+            <View style={styles.progressBarBg}>
+              <View
+                style={[
+                  styles.progressBarFill,
+                  {
+                    width: `${formData.progress}%`,
+                    backgroundColor: getStatusColor(formData.status),
+                  },
+                ]}
+              />
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.progressButton}
+            onPress={() =>
+              updateField("progress", Math.min(100, formData.progress + 5))
+            }
+          >
+            <Ionicons name="add" size={20} color="#007AFF" />
+          </TouchableOpacity>
+        </View>
+      </View>
     </ScrollView>
   );
 
   const renderStep3 = () => (
     <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false}>
-      <Text style={styles.stepTitle}>Compensation</Text>
-      <Text style={styles.stepSubtitle}>Salary and payment details</Text>
+      <Text style={styles.stepTitle}>Team Management</Text>
+      <Text style={styles.stepSubtitle}>
+        Assign team members to the project
+      </Text>
 
-      {renderInput("Annual Salary", "salary", {
-        keyboardType: "numeric",
-        placeholder: "75000",
+      {renderInput("Team Leader", "teamLeader", {
+        placeholder: "Enter team leader name",
       })}
 
-      {renderPicker("Pay Frequency", "payFrequency", [
-        "Weekly",
-        "Bi-weekly",
-        "Monthly",
-        "Annual",
-      ])}
+      <View style={styles.divider} />
+
+      <Text style={styles.subsectionTitle}>
+        Team Members ({formData.teamMembers.length})
+      </Text>
+
+      <View style={styles.teamList}>
+        {formData.teamMembers.map((member) => (
+          <View key={member.id} style={styles.teamMemberCard}>
+            <Image source={{ uri: member.image }} style={styles.memberAvatar} />
+            <View style={styles.memberInfo}>
+              <Text style={styles.memberName}>{member.name}</Text>
+              <Text style={styles.memberRole}>{member.role}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.removeMemberButton}
+              onPress={() => {
+                const updated = formData.teamMembers.filter(
+                  (m) => m.id !== member.id,
+                );
+                updateField("teamMembers", updated);
+              }}
+            >
+              <Ionicons name="close-circle" size={24} color="#FF3B30" />
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
+
+      <TouchableOpacity style={styles.addMemberButton}>
+        <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
+        <Text style={styles.addMemberText}>Add Team Member</Text>
+      </TouchableOpacity>
 
       <View style={styles.infoBox}>
-        <Ionicons name="lock-closed" size={16} color="#007AFF" />
+        <Ionicons name="information-circle" size={16} color="#007AFF" />
         <Text style={styles.infoText}>
-          Compensation information is confidential and securely stored
+          You can add more team members or adjust their roles after saving
         </Text>
       </View>
     </ScrollView>
@@ -384,23 +479,84 @@ const EditEmployeeScreen = ({ navigation }) => {
 
   const renderStep4 = () => (
     <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false}>
-      <Text style={styles.stepTitle}>Additional Information</Text>
-      <Text style={styles.stepSubtitle}>Emergency contacts and notes</Text>
+      <Text style={styles.stepTitle}>Additional Details</Text>
+      <Text style={styles.stepSubtitle}>Description, notes, and actions</Text>
 
-      {renderInput("Emergency Contact Name", "emergencyContact", {
-        placeholder: "Jane Doe",
-      })}
-
-      {renderInput("Emergency Contact Phone", "emergencyPhone", {
-        keyboardType: "phone-pad",
-        placeholder: "+1 (555) 000-0000",
-      })}
-
-      {renderInput("Additional Notes", "notes", {
+      {renderInput("Project Description", "description", {
         multiline: true,
         numberOfLines: 4,
-        placeholder: "Any additional information about the employee...",
+        placeholder: "Provide a detailed description of the project...",
       })}
+
+      {renderInput("Notes", "notes", {
+        multiline: true,
+        numberOfLines: 4,
+        placeholder: "Any additional notes or important information...",
+      })}
+
+      <View style={styles.divider} />
+
+      <View style={styles.summaryCard}>
+        <Text style={styles.summaryTitle}>Project Summary</Text>
+
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Name:</Text>
+          <Text style={styles.summaryValue}>{formData.name}</Text>
+        </View>
+
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Client:</Text>
+          <Text style={styles.summaryValue}>{formData.clientName}</Text>
+        </View>
+
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Deadline:</Text>
+          <Text style={styles.summaryValue}>{formData.deadline}</Text>
+        </View>
+
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Status:</Text>
+          <View
+            style={[
+              styles.statusDot,
+              { backgroundColor: getStatusColor(formData.status) },
+            ]}
+          />
+          <Text
+            style={[
+              styles.summaryValue,
+              { color: getStatusColor(formData.status) },
+            ]}
+          >
+            {formData.status}
+          </Text>
+        </View>
+
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Priority:</Text>
+          <View
+            style={[
+              styles.statusDot,
+              { backgroundColor: getPriorityColor(formData.priority) },
+            ]}
+          />
+          <Text
+            style={[
+              styles.summaryValue,
+              { color: getPriorityColor(formData.priority) },
+            ]}
+          >
+            {formData.priority}
+          </Text>
+        </View>
+
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Team:</Text>
+          <Text style={styles.summaryValue}>
+            {formData.teamMembers.length} members
+          </Text>
+        </View>
+      </View>
 
       <View style={styles.divider} />
 
@@ -409,11 +565,11 @@ const EditEmployeeScreen = ({ navigation }) => {
         onPress={handleDeleteConfirm}
       >
         <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-        <Text style={styles.deleteButtonText}>Delete Employee</Text>
+        <Text style={styles.deleteButtonText}>Delete Project</Text>
       </TouchableOpacity>
 
       <Text style={styles.deleteWarning}>
-        This action cannot be undone. All employee data will be permanently
+        This action cannot be undone. All project data will be permanently
         removed.
       </Text>
     </ScrollView>
@@ -445,7 +601,7 @@ const EditEmployeeScreen = ({ navigation }) => {
             <Ionicons name="arrow-back" size={24} color="#222" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>Edit Employee</Text>
+            <Text style={styles.headerTitle}>Edit Project</Text>
             {hasChanges && <View style={styles.changedIndicator} />}
           </View>
           <View style={styles.placeholder} />
@@ -600,6 +756,12 @@ const styles = StyleSheet.create({
     color: "#888",
     marginBottom: 24,
   },
+  subsectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#222",
+    marginBottom: 12,
+  },
   inputGroup: {
     marginBottom: 20,
   },
@@ -676,13 +838,98 @@ const styles = StyleSheet.create({
   pickerOptionTextActive: {
     color: "#fff",
   },
+  progressControl: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  progressButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  progressDisplay: {
+    flex: 1,
+    gap: 8,
+  },
+  progressText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#222",
+    textAlign: "center",
+  },
+  progressBarBg: {
+    height: 8,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    borderRadius: 4,
+  },
+  teamList: {
+    gap: 12,
+  },
+  teamMemberCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8f8f8",
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  memberAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 12,
+  },
+  memberInfo: {
+    flex: 1,
+  },
+  memberName: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#222",
+    marginBottom: 2,
+  },
+  memberRole: {
+    fontSize: 13,
+    color: "#666",
+  },
+  removeMemberButton: {
+    padding: 4,
+  },
+  addMemberButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f0f0f0",
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderStyle: "dashed",
+    gap: 8,
+    marginTop: 8,
+  },
+  addMemberText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#007AFF",
+  },
   infoBox: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F0F9FF",
     borderRadius: 12,
     padding: 14,
-    marginTop: 8,
+    marginTop: 16,
     gap: 10,
   },
   infoText: {
@@ -690,6 +937,43 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#007AFF",
     lineHeight: 18,
+  },
+  summaryCard: {
+    backgroundColor: "#f8f8f8",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  summaryTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#222",
+    marginBottom: 12,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e8e8e8",
+  },
+  summaryLabel: {
+    fontSize: 14,
+    color: "#666",
+    width: 100,
+  },
+  summaryValue: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#222",
+    flex: 1,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
   },
   deleteButton: {
     flexDirection: "row",
@@ -757,5 +1041,3 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
 });
-
-export default EditEmployeeScreen;

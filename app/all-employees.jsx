@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import React, { useMemo, useState } from "react";
 import {
   FlatList,
   Modal,
@@ -11,84 +11,119 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
 
 const EmployeeDataScreen = () => {
-  const [activeTab, setActiveTab] = useState('employees');
+  const [activeTab, setActiveTab] = useState("employees");
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [expandedNodes, setExpandedNodes] = useState({});
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [selectedPosition, setSelectedPosition] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [selectedPosition, setSelectedPosition] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  
+
   const [employees, setEmployees] = useState([
     {
       id: 1,
-      name: 'Samuel Adisi',
-      email: 'sarah.j@company.com',
-      phone: '+1 555-0101',
-      position: 'CEO',
-      department: 'Executive',
-      hireDate: '2018-01-15',
+      name: "Samuel Adisi",
+      email: "sarah.j@company.com",
+      phone: "+1 555-0101",
+      position: "CEO",
+      department: "Executive",
+      hireDate: "2018-01-15",
       managerId: null,
       jobHistory: [
-        { position: 'CEO', department: 'Executive', startDate: '2020-01-01', endDate: null },
-        { position: 'COO', department: 'Operations', startDate: '2018-01-15', endDate: '2019-12-31' }
-      ]
+        {
+          position: "CEO",
+          department: "Executive",
+          startDate: "2020-01-01",
+          endDate: null,
+        },
+        {
+          position: "COO",
+          department: "Operations",
+          startDate: "2018-01-15",
+          endDate: "2019-12-31",
+        },
+      ],
     },
     {
       id: 2,
-      name: 'Michael Obeng',
-      email: 'michael.c@company.com',
-      phone: '+1 555-0102',
-      position: 'CTO',
-      department: 'Technology',
-      hireDate: '2019-03-20',
+      name: "Michael Obeng",
+      email: "michael.c@company.com",
+      phone: "+1 555-0102",
+      position: "CTO",
+      department: "Technology",
+      hireDate: "2019-03-20",
       managerId: 1,
       jobHistory: [
-        { position: 'CTO', department: 'Technology', startDate: '2021-06-01', endDate: null },
-        { position: 'Engineering Manager', department: 'Technology', startDate: '2019-03-20', endDate: '2021-05-31' }
-      ]
+        {
+          position: "CTO",
+          department: "Technology",
+          startDate: "2021-06-01",
+          endDate: null,
+        },
+        {
+          position: "Engineering Manager",
+          department: "Technology",
+          startDate: "2019-03-20",
+          endDate: "2021-05-31",
+        },
+      ],
     },
     {
       id: 3,
-      name: 'Emily Anani',
-      email: 'emily.r@company.com',
-      phone: '+1 555-0103',
-      position: 'Head of HR',
-      department: 'Human Resources',
-      hireDate: '2019-06-10',
+      name: "Emily Anani",
+      email: "emily.r@company.com",
+      phone: "+1 555-0103",
+      position: "Head of HR",
+      department: "Human Resources",
+      hireDate: "2019-06-10",
       managerId: 1,
       jobHistory: [
-        { position: 'Head of HR', department: 'Human Resources', startDate: '2019-06-10', endDate: null }
-      ]
+        {
+          position: "Head of HR",
+          department: "Human Resources",
+          startDate: "2019-06-10",
+          endDate: null,
+        },
+      ],
     },
     {
       id: 4,
-      name: 'David Yaw',
-      email: 'david.k@company.com',
-      phone: '+1 555-0104',
-      position: 'Senior Developer',
-      department: 'Technology',
-      hireDate: '2020-02-14',
+      name: "David Yaw",
+      email: "david.k@company.com",
+      phone: "+1 555-0104",
+      position: "Senior Developer",
+      department: "Technology",
+      hireDate: "2020-02-14",
       managerId: 2,
       jobHistory: [
-        { position: 'Senior Developer', department: 'Technology', startDate: '2022-01-01', endDate: null },
-        { position: 'Developer', department: 'Technology', startDate: '2020-02-14', endDate: '2021-12-31' }
-      ]
-    }
+        {
+          position: "Senior Developer",
+          department: "Technology",
+          startDate: "2022-01-01",
+          endDate: null,
+        },
+        {
+          position: "Developer",
+          department: "Technology",
+          startDate: "2020-02-14",
+          endDate: "2021-12-31",
+        },
+      ],
+    },
   ]);
 
   // Get unique departments and positions
   const departments = useMemo(() => {
-    const depts = [...new Set(employees.map(emp => emp.department))];
+    const depts = [...new Set(employees.map((emp) => emp.department))];
     return depts.sort();
   }, [employees]);
 
   const positions = useMemo(() => {
-    const pos = [...new Set(employees.map(emp => emp.position))];
+    const pos = [...new Set(employees.map((emp) => emp.position))];
     return pos.sort();
   }, [employees]);
 
@@ -97,25 +132,28 @@ const EmployeeDataScreen = () => {
     let filtered = employees;
 
     if (selectedDepartment) {
-      filtered = filtered.filter(emp => emp.department === selectedDepartment);
+      filtered = filtered.filter(
+        (emp) => emp.department === selectedDepartment,
+      );
     }
 
     if (selectedPosition) {
-      filtered = filtered.filter(emp => emp.position === selectedPosition);
+      filtered = filtered.filter((emp) => emp.position === selectedPosition);
     }
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(emp => {
+      filtered = filtered.filter((emp) => {
         return (
           emp.name.toLowerCase().includes(query) ||
           emp.email.toLowerCase().includes(query) ||
           emp.position.toLowerCase().includes(query) ||
           emp.department.toLowerCase().includes(query) ||
           emp.phone.includes(query) ||
-          emp.jobHistory.some(job => 
-            job.position.toLowerCase().includes(query) ||
-            job.department.toLowerCase().includes(query)
+          emp.jobHistory.some(
+            (job) =>
+              job.position.toLowerCase().includes(query) ||
+              job.department.toLowerCase().includes(query),
           )
         );
       });
@@ -125,33 +163,31 @@ const EmployeeDataScreen = () => {
   }, [employees, searchQuery, selectedDepartment, selectedPosition]);
 
   const clearAllFilters = () => {
-    setSearchQuery('');
-    setSelectedDepartment('');
-    setSelectedPosition('');
+    setSearchQuery("");
+    setSelectedDepartment("");
+    setSelectedPosition("");
   };
 
-  const hasActiveFilters = searchQuery || selectedDepartment || selectedPosition;
+  const hasActiveFilters =
+    searchQuery || selectedDepartment || selectedPosition;
 
   const handleAddEmployee = () => {
     // Navigate to add employee screen
-    router.push('/(clocking)/add-employee');
+    router.push("./add-employee");
   };
 
   const handleEditEmployee = () => {
-   
-   
-    router.push('/(clocking)/edit-employee');
+    router.push("./edit-employee");
     setSelectedEmployee(null);
-    
   };
 
   const toggleNode = (id) => {
-    setExpandedNodes(prev => ({ ...prev, [id]: !prev[id] }));
+    setExpandedNodes((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const buildOrgTree = () => {
     const tree = {};
-    employees.forEach(emp => {
+    employees.forEach((emp) => {
       if (!tree[emp.managerId]) tree[emp.managerId] = [];
       tree[emp.managerId].push(emp);
     });
@@ -170,22 +206,26 @@ const EmployeeDataScreen = () => {
             onPress={() => hasChildren && toggleNode(employee.id)}
           >
             {hasChildren && (
-              <Ionicons 
-                name={isExpanded ? 'chevron-down' : 'chevron-forward'} 
-                size={16} 
-                color="#666" 
+              <Ionicons
+                name={isExpanded ? "chevron-down" : "chevron-forward"}
+                size={16}
+                color="#666"
                 style={{ marginRight: 8 }}
               />
             )}
-            <View style={[styles.orgNodeInfo, !hasChildren && { marginLeft: 24 }]}>
+            <View
+              style={[styles.orgNodeInfo, !hasChildren && { marginLeft: 24 }]}
+            >
               <Text style={styles.orgNodeName}>{employee.name}</Text>
               <Text style={styles.orgNodePosition}>{employee.position}</Text>
             </View>
           </TouchableOpacity>
         </View>
-        {hasChildren && isExpanded && tree[employee.id].map(child =>
-          renderOrgNode(child, tree, level + 1)
-        )}
+        {hasChildren &&
+          isExpanded &&
+          tree[employee.id].map((child) =>
+            renderOrgNode(child, tree, level + 1),
+          )}
       </View>
     );
   };
@@ -205,7 +245,7 @@ const EmployeeDataScreen = () => {
           <Text style={styles.employeePosition}>{item.position}</Text>
         </View>
       </View>
-      
+
       <View style={styles.cardDetails}>
         <View style={styles.detailRow}>
           <Ionicons name="mail-outline" size={16} color="#666" />
@@ -240,7 +280,7 @@ const EmployeeDataScreen = () => {
                 <Ionicons name="close" size={28} color="#666" />
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView style={styles.modalBody}>
               <View style={styles.detailSection}>
                 <Text style={styles.sectionTitle}>Personal Information</Text>
@@ -258,7 +298,9 @@ const EmployeeDataScreen = () => {
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Hire Date</Text>
-                  <Text style={styles.infoValue}>{selectedEmployee.hireDate}</Text>
+                  <Text style={styles.infoValue}>
+                    {selectedEmployee.hireDate}
+                  </Text>
                 </View>
               </View>
 
@@ -266,11 +308,15 @@ const EmployeeDataScreen = () => {
                 <Text style={styles.sectionTitle}>Current Position</Text>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Position</Text>
-                  <Text style={styles.infoValue}>{selectedEmployee.position}</Text>
+                  <Text style={styles.infoValue}>
+                    {selectedEmployee.position}
+                  </Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Department</Text>
-                  <Text style={styles.infoValue}>{selectedEmployee.department}</Text>
+                  <Text style={styles.infoValue}>
+                    {selectedEmployee.department}
+                  </Text>
                 </View>
               </View>
 
@@ -281,7 +327,7 @@ const EmployeeDataScreen = () => {
                     <Text style={styles.jobTitle}>{job.position}</Text>
                     <Text style={styles.jobDepartment}>{job.department}</Text>
                     <Text style={styles.jobDates}>
-                      {job.startDate} - {job.endDate || 'Present'}
+                      {job.startDate} - {job.endDate || "Present"}
                     </Text>
                   </View>
                 ))}
@@ -289,7 +335,7 @@ const EmployeeDataScreen = () => {
             </ScrollView>
 
             <View style={styles.modalFooter}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.editButton}
                 onPress={handleEditEmployee}
               >
@@ -320,38 +366,50 @@ const EmployeeDataScreen = () => {
           <Text style={styles.headerTitle}>Employees</Text>
           <Text style={styles.headerSubtitle}>{employees.length} total</Text>
         </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={handleAddEmployee}
-        >
+        <TouchableOpacity style={styles.addButton} onPress={handleAddEmployee}>
           <Ionicons name="add" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
       <View style={styles.tabs}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'employees' && styles.activeTab]}
-          onPress={() => setActiveTab('employees')}
+          style={[styles.tab, activeTab === "employees" && styles.activeTab]}
+          onPress={() => setActiveTab("employees")}
         >
-          <Text style={[styles.tabText, activeTab === 'employees' && styles.activeTabText]}>
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "employees" && styles.activeTabText,
+            ]}
+          >
             List
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'orgChart' && styles.activeTab]}
-          onPress={() => setActiveTab('orgChart')}
+          style={[styles.tab, activeTab === "orgChart" && styles.activeTab]}
+          onPress={() => setActiveTab("orgChart")}
         >
-          <Text style={[styles.tabText, activeTab === 'orgChart' && styles.activeTabText]}>
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "orgChart" && styles.activeTabText,
+            ]}
+          >
             Org Chart
           </Text>
         </TouchableOpacity>
       </View>
 
-      {activeTab === 'employees' && (
+      {activeTab === "employees" && (
         <>
           <View style={styles.searchSection}>
             <View style={styles.searchBar}>
-              <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+              <Ionicons
+                name="search"
+                size={20}
+                color="#999"
+                style={styles.searchIcon}
+              />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search by name, email, position..."
@@ -361,20 +419,23 @@ const EmployeeDataScreen = () => {
                 autoCorrect={false}
               />
               {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
                   <Ionicons name="close-circle" size={20} color="#999" />
                 </TouchableOpacity>
               )}
             </View>
 
-            <TouchableOpacity 
-              style={[styles.filterButton, showFilters && styles.filterButtonActive]}
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                showFilters && styles.filterButtonActive,
+              ]}
               onPress={() => setShowFilters(!showFilters)}
             >
-              <Ionicons 
-                name={showFilters ? "options" : "options-outline"} 
-                size={20} 
-                color={showFilters ? "#007AFF" : "#666"} 
+              <Ionicons
+                name={showFilters ? "options" : "options-outline"}
+                size={20}
+                color={showFilters ? "#007AFF" : "#666"}
               />
             </TouchableOpacity>
           </View>
@@ -385,19 +446,26 @@ const EmployeeDataScreen = () => {
                 <Text style={styles.filterLabel}>Department</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={styles.filterChips}>
-                    {departments.map(dept => (
+                    {departments.map((dept) => (
                       <TouchableOpacity
                         key={dept}
                         style={[
                           styles.chip,
-                          selectedDepartment === dept && styles.chipActive
+                          selectedDepartment === dept && styles.chipActive,
                         ]}
-                        onPress={() => setSelectedDepartment(selectedDepartment === dept ? '' : dept)}
+                        onPress={() =>
+                          setSelectedDepartment(
+                            selectedDepartment === dept ? "" : dept,
+                          )
+                        }
                       >
-                        <Text style={[
-                          styles.chipText,
-                          selectedDepartment === dept && styles.chipTextActive
-                        ]}>
+                        <Text
+                          style={[
+                            styles.chipText,
+                            selectedDepartment === dept &&
+                              styles.chipTextActive,
+                          ]}
+                        >
                           {dept}
                         </Text>
                       </TouchableOpacity>
@@ -410,19 +478,25 @@ const EmployeeDataScreen = () => {
                 <Text style={styles.filterLabel}>Position</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={styles.filterChips}>
-                    {positions.map(pos => (
+                    {positions.map((pos) => (
                       <TouchableOpacity
                         key={pos}
                         style={[
                           styles.chip,
-                          selectedPosition === pos && styles.chipActive
+                          selectedPosition === pos && styles.chipActive,
                         ]}
-                        onPress={() => setSelectedPosition(selectedPosition === pos ? '' : pos)}
+                        onPress={() =>
+                          setSelectedPosition(
+                            selectedPosition === pos ? "" : pos,
+                          )
+                        }
                       >
-                        <Text style={[
-                          styles.chipText,
-                          selectedPosition === pos && styles.chipTextActive
-                        ]}>
+                        <Text
+                          style={[
+                            styles.chipText,
+                            selectedPosition === pos && styles.chipTextActive,
+                          ]}
+                        >
                           {pos}
                         </Text>
                       </TouchableOpacity>
@@ -432,7 +506,10 @@ const EmployeeDataScreen = () => {
               </View>
 
               {hasActiveFilters && (
-                <TouchableOpacity style={styles.clearFilters} onPress={clearAllFilters}>
+                <TouchableOpacity
+                  style={styles.clearFilters}
+                  onPress={clearAllFilters}
+                >
                   <Text style={styles.clearFiltersText}>Clear all filters</Text>
                 </TouchableOpacity>
               )}
@@ -442,14 +519,15 @@ const EmployeeDataScreen = () => {
           {hasActiveFilters && (
             <View style={styles.resultsBar}>
               <Text style={styles.resultsText}>
-                {filteredEmployees.length} {filteredEmployees.length === 1 ? 'result' : 'results'}
+                {filteredEmployees.length}{" "}
+                {filteredEmployees.length === 1 ? "result" : "results"}
               </Text>
             </View>
           )}
         </>
       )}
 
-      {activeTab === 'employees' ? (
+      {activeTab === "employees" ? (
         filteredEmployees.length > 0 ? (
           <FlatList
             data={filteredEmployees}
@@ -462,7 +540,7 @@ const EmployeeDataScreen = () => {
         )
       ) : (
         <ScrollView style={styles.orgChart}>
-          {tree[null] && tree[null].map(emp => renderOrgNode(emp, tree))}
+          {tree[null] && tree[null].map((emp) => renderOrgNode(emp, tree))}
         </ScrollView>
       )}
 
@@ -474,70 +552,70 @@ const EmployeeDataScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: "#e0e0e0",
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: '600',
-    color: '#222',
+    fontWeight: "600",
+    color: "#222",
   },
   headerSubtitle: {
     fontSize: 13,
-    color: '#888',
+    color: "#888",
     marginTop: 2,
   },
   addButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#007AFF",
+    justifyContent: "center",
+    alignItems: "center",
   },
   tabs: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
+    flexDirection: "row",
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: "#e0e0e0",
   },
   tab: {
     flex: 1,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: '#007AFF',
+    borderBottomColor: "#007AFF",
   },
   tabText: {
     fontSize: 15,
-    color: '#888',
+    color: "#888",
   },
   activeTabText: {
-    color: '#007AFF',
-    fontWeight: '500',
+    color: "#007AFF",
+    fontWeight: "500",
   },
   searchSection: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     gap: 8,
   },
   searchBar: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
     borderRadius: 10,
     paddingHorizontal: 12,
     height: 42,
@@ -548,151 +626,151 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#222',
+    color: "#222",
   },
   filterButton: {
     width: 42,
     height: 42,
     borderRadius: 10,
-    backgroundColor: '#f5f5f5',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#f5f5f5",
+    justifyContent: "center",
+    alignItems: "center",
   },
   filterButtonActive: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: "#E3F2FD",
   },
   filterSection: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     paddingHorizontal: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: "#e0e0e0",
   },
   filterGroup: {
     marginBottom: 12,
   },
   filterLabel: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#666',
+    fontWeight: "500",
+    color: "#666",
     marginBottom: 8,
   },
   filterChips: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: "#e0e0e0",
   },
   chipActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: "#007AFF",
+    borderColor: "#007AFF",
   },
   chipText: {
     fontSize: 13,
-    color: '#666',
+    color: "#666",
   },
   chipTextActive: {
-    color: '#fff',
-    fontWeight: '500',
+    color: "#fff",
+    fontWeight: "500",
   },
   clearFilters: {
     paddingVertical: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   clearFiltersText: {
     fontSize: 13,
-    color: '#007AFF',
-    fontWeight: '500',
+    color: "#007AFF",
+    fontWeight: "500",
   },
   resultsBar: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   resultsText: {
     fontSize: 13,
-    color: '#666',
+    color: "#666",
   },
   list: {
     padding: 12,
   },
   employeeCard: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
   },
   cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#007AFF",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   avatarText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   cardInfo: {
     flex: 1,
   },
   employeeName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#222',
+    fontWeight: "600",
+    color: "#222",
     marginBottom: 2,
   },
   employeePosition: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   cardDetails: {
     gap: 6,
   },
   detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   detailText: {
     fontSize: 13,
-    color: '#666',
+    color: "#666",
   },
   emptyState: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: 60,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#222',
+    fontWeight: "600",
+    color: "#222",
     marginTop: 16,
     marginBottom: 6,
   },
   emptyText: {
     fontSize: 14,
-    color: '#888',
+    color: "#888",
   },
   orgChart: {
     flex: 1,
@@ -702,13 +780,13 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   orgNode: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 8,
     marginBottom: 4,
   },
   orgNodeContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 12,
   },
   orgNodeInfo: {
@@ -716,37 +794,37 @@ const styles = StyleSheet.create({
   },
   orgNodeName: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#222',
+    fontWeight: "600",
+    color: "#222",
     marginBottom: 2,
   },
   orgNodePosition: {
     fontSize: 13,
-    color: '#666',
+    color: "#666",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    maxHeight: '90%',
+    maxHeight: "90%",
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: "#e0e0e0",
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#222',
+    fontWeight: "600",
+    color: "#222",
   },
   modalBody: {
     padding: 16,
@@ -756,65 +834,65 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#222',
+    fontWeight: "600",
+    color: "#222",
     marginBottom: 12,
   },
   infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   infoLabel: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   infoValue: {
     fontSize: 14,
-    color: '#222',
-    fontWeight: '500',
+    color: "#222",
+    fontWeight: "500",
   },
   jobHistoryItem: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: "#f9f9f9",
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
   },
   jobTitle: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#222',
+    fontWeight: "600",
+    color: "#222",
     marginBottom: 3,
   },
   jobDepartment: {
     fontSize: 13,
-    color: '#666',
+    color: "#666",
     marginBottom: 4,
   },
   jobDates: {
     fontSize: 12,
-    color: '#999',
+    color: "#999",
   },
   modalFooter: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: "#e0e0e0",
   },
   editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#007AFF',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#007AFF",
     paddingVertical: 14,
     borderRadius: 12,
     gap: 8,
   },
   editButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: "600",
+    color: "#fff",
   },
 });
 

@@ -467,6 +467,7 @@ const AllProjectsScreen = () => {
                   setSelectedProject(null);
                   // Navigate to project details
                   console.log("Navigate to project:", selectedProject.id);
+                  router.push("./edit-project");
                 }}
               >
                 <Ionicons name="open-outline" size={20} color="#fff" />
