@@ -1,4 +1,4 @@
-import { Stack ,Slot} from "expo-router";
+import { Slot, Stack } from "expo-router";
 
 export const unstable_settings = {
   anchor: '(clocking)',

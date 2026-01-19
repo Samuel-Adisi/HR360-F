@@ -1,7 +1,7 @@
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert, Modal } from 'react-native'
-import React, { useState, useEffect, useRef } from 'react'
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import {router} from 'expo-router';
+import { router } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const Clocking = () => {
   const [time, setTime] = useState(new Date());
@@ -98,7 +98,7 @@ const Clocking = () => {
             <Text style={styles.subtitle}>Begin another great day by clocking in.</Text>
           </View>
           <Image 
-            source={require('../../assets/profile/person.avif')}
+            source={require('../assets/profile/person.avif')}
             style={styles.profile}
           />
         </View>
