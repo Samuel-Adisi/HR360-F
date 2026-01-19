@@ -244,7 +244,7 @@ export default function HRDashboard() {
       label: "Leave Management",
       hasSubmenu: true,
       submenu: [
-        "All-Leave-Request",
+        "Leave-Request",
         "Leave-Balance",
         "New-Leave-Request",
         "Edit-Leave-Request",
@@ -266,7 +266,8 @@ export default function HRDashboard() {
       id: "Departments",
       icon: "business-outline",
       label: "Departments",
-      hasSubmenu: false,
+      hasSubmenu: true,
+      submenu: ["All-Departments", "Add-Department"],
     },
     {
       id: "Payroll",
