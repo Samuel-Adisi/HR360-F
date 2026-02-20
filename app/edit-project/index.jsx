@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const EditProjectScreen = ({ navigation }) => {
+const EditProjectScreen = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [hasChanges, setHasChanges] = useState(false);
 

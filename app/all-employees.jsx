@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   FlatList,
   Modal,
@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import api from "../src/services/api";
 
 const EmployeeDataScreen = () => {
   const [activeTab, setActiveTab] = useState("employees");
@@ -23,98 +24,26 @@ const EmployeeDataScreen = () => {
   const [selectedPosition, setSelectedPosition] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
-  const [employees, setEmployees] = useState([
-    {
-      id: 1,
-      name: "Samuel Adisi",
-      email: "sarah.j@company.com",
-      phone: "+1 555-0101",
-      position: "CEO",
-      department: "Executive",
-      hireDate: "2018-01-15",
-      managerId: null,
-      jobHistory: [
-        {
-          position: "CEO",
-          department: "Executive",
-          startDate: "2020-01-01",
-          endDate: null,
-        },
-        {
-          position: "COO",
-          department: "Operations",
-          startDate: "2018-01-15",
-          endDate: "2019-12-31",
-        },
-      ],
-    },
-    {
-      id: 2,
-      name: "Michael Obeng",
-      email: "michael.c@company.com",
-      phone: "+1 555-0102",
-      position: "CTO",
-      department: "Technology",
-      hireDate: "2019-03-20",
-      managerId: 1,
-      jobHistory: [
-        {
-          position: "CTO",
-          department: "Technology",
-          startDate: "2021-06-01",
-          endDate: null,
-        },
-        {
-          position: "Engineering Manager",
-          department: "Technology",
-          startDate: "2019-03-20",
-          endDate: "2021-05-31",
-        },
-      ],
-    },
-    {
-      id: 3,
-      name: "Emily Anani",
-      email: "emily.r@company.com",
-      phone: "+1 555-0103",
-      position: "Head of HR",
-      department: "Human Resources",
-      hireDate: "2019-06-10",
-      managerId: 1,
-      jobHistory: [
-        {
-          position: "Head of HR",
-          department: "Human Resources",
-          startDate: "2019-06-10",
-          endDate: null,
-        },
-      ],
-    },
-    {
-      id: 4,
-      name: "David Yaw",
-      email: "david.k@company.com",
-      phone: "+1 555-0104",
-      position: "Senior Developer",
-      department: "Technology",
-      hireDate: "2020-02-14",
-      managerId: 2,
-      jobHistory: [
-        {
-          position: "Senior Developer",
-          department: "Technology",
-          startDate: "2022-01-01",
-          endDate: null,
-        },
-        {
-          position: "Developer",
-          department: "Technology",
-          startDate: "2020-02-14",
-          endDate: "2021-12-31",
-        },
-      ],
-    },
-  ]);
+  const [employees, setEmployees] = useState([]);
+
+  useEffect(() => {
+    async function fetchEmployee() {
+      try {
+        const res = await api.get("/api/employees");
+
+        if (res.status == 200) {
+          console.log(res.data);
+          setEmployees(res.data.employees);
+        }
+      } catch (error) {
+        console.log("ERROR DATA:", error.response?.data);
+        console.log("ERROR STATUS:", error.response?.status);
+        console.log("ERROR MESSAGE:", error.message);
+      }
+    }
+
+    fetchEmployee();
+  }, []);
 
   // Get unique departments and positions
   const departments = useMemo(() => {
@@ -176,8 +105,14 @@ const EmployeeDataScreen = () => {
     router.push("./add-employee");
   };
 
-  const handleEditEmployee = () => {
-    router.push("./edit-employee");
+  const handleEditEmployee = async (selectedEmployee) => {
+    const employeeID = selectedEmployee.id;
+
+    router.push({
+      pathname: "./edit-employee",
+      params: { employeeID },
+    });
+
     setSelectedEmployee(null);
   };
 
@@ -238,10 +173,12 @@ const EmployeeDataScreen = () => {
     >
       <View style={styles.cardHeader}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
+          <Text style={styles.avatarText}>
+            {item.full_name?.charAt(0) || "?"}
+          </Text>
         </View>
         <View style={styles.cardInfo}>
-          <Text style={styles.employeeName}>{item.name}</Text>
+          <Text style={styles.employeeName}>{item.full_name}</Text>
           <Text style={styles.employeePosition}>{item.position}</Text>
         </View>
       </View>
@@ -265,7 +202,7 @@ const EmployeeDataScreen = () => {
 
   const renderEmployeeDetails = () => {
     if (!selectedEmployee) return null;
-
+    setSelectedEmployee(selectedEmployee);
     return (
       <Modal
         visible={!!selectedEmployee}
@@ -286,7 +223,9 @@ const EmployeeDataScreen = () => {
                 <Text style={styles.sectionTitle}>Personal Information</Text>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Name</Text>
-                  <Text style={styles.infoValue}>{selectedEmployee.name}</Text>
+                  <Text style={styles.infoValue}>
+                    {selectedEmployee.full_name}
+                  </Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Email</Text>
@@ -319,25 +258,12 @@ const EmployeeDataScreen = () => {
                   </Text>
                 </View>
               </View>
-
-              <View style={styles.detailSection}>
-                <Text style={styles.sectionTitle}>Job History</Text>
-                {selectedEmployee.jobHistory.map((job, idx) => (
-                  <View key={idx} style={styles.jobHistoryItem}>
-                    <Text style={styles.jobTitle}>{job.position}</Text>
-                    <Text style={styles.jobDepartment}>{job.department}</Text>
-                    <Text style={styles.jobDates}>
-                      {job.startDate} - {job.endDate || "Present"}
-                    </Text>
-                  </View>
-                ))}
-              </View>
             </ScrollView>
 
             <View style={styles.modalFooter}>
               <TouchableOpacity
                 style={styles.editButton}
-                onPress={handleEditEmployee}
+                onPress={() => handleEditEmployee(selectedEmployee)}
               >
                 <Ionicons name="create-outline" size={20} color="#fff" />
                 <Text style={styles.editButtonText}>Edit Employee</Text>

@@ -1,138 +1,62 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-    FlatList,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+
+import api from "../src/services/api";
 
 const LeaveBalanceScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedLeaveType, setSelectedLeaveType] = useState("");
+  const [leaveBalances, setLeaveBalances] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const [leaveBalances] = useState([
-    {
-      id: "1",
-      empId: "1001",
-      name: "Brown",
-      leaveType: "Annual Leave",
-      doj: "15-07-2005",
-      entitled: 20,
-      utilized: 15,
-      balanced: 5,
-      carriedForward: 0,
-    },
-    {
-      id: "2",
-      empId: "1002",
-      name: "Miller",
-      leaveType: "Annual Leave",
-      doj: "15-07-2005",
-      entitled: 24,
-      utilized: 17,
-      balanced: 7,
-      carriedForward: 0,
-    },
-    {
-      id: "3",
-      empId: "1003",
-      name: "Johnson",
-      leaveType: "Annual Leave",
-      doj: "15-07-2005",
-      entitled: 21,
-      utilized: 17,
-      balanced: 4,
-      carriedForward: 0,
-    },
-    {
-      id: "4",
-      empId: "1004",
-      name: "Jones",
-      leaveType: "Annual Leave",
-      doj: "15-07-2005",
-      entitled: 22,
-      utilized: 12,
-      balanced: 10,
-      carriedForward: 0,
-    },
-    {
-      id: "5",
-      empId: "1005",
-      name: "Davis",
-      leaveType: "Annual Leave",
-      doj: "15-07-2005",
-      entitled: 20,
-      utilized: 15,
-      balanced: 5,
-      carriedForward: 0,
-    },
-    {
-      id: "6",
-      empId: "1006",
-      name: "Sarah",
-      leaveType: "Annual Leave",
-      doj: "15-07-2005",
-      entitled: 30,
-      utilized: 15,
-      balanced: 15,
-      carriedForward: 0,
-    },
-    {
-      id: "7",
-      empId: "1007",
-      name: "Clark",
-      leaveType: "Annual Leave",
-      doj: "15-07-2005",
-      entitled: 26,
-      utilized: 21,
-      balanced: 5,
-      carriedForward: 0,
-    },
-    {
-      id: "8",
-      empId: "1008",
-      name: "Wilson",
-      leaveType: "Sick Leave",
-      doj: "10-03-2010",
-      entitled: 10,
-      utilized: 3,
-      balanced: 7,
-      carriedForward: 0,
-    },
-    {
-      id: "9",
-      empId: "1009",
-      name: "Taylor",
-      leaveType: "Casual Leave",
-      doj: "22-11-2015",
-      entitled: 12,
-      utilized: 8,
-      balanced: 4,
-      carriedForward: 0,
-    },
-    {
-      id: "10",
-      empId: "1010",
-      name: "Anderson",
-      leaveType: "Annual Leave",
-      doj: "05-01-2018",
-      entitled: 18,
-      utilized: 10,
-      balanced: 8,
-      carriedForward: 2,
-    },
-  ]);
+  const fetchLeaveBalances = async () => {
+    try {
+      const res = await api.get("/api/leave-balance");
+      console.log("Leave Balance Response:", res.data);
+
+      if (res.status === 200) {
+        // Handle different response formats
+        const data = res.data.data || res.data;
+        const balances = Array.isArray(data) ? data : [];
+        setLeaveBalances(balances);
+      }
+    } catch (error) {
+      console.log("ERROR DATA:", error.response?.data);
+      console.log("ERROR STATUS:", error.response?.status);
+      console.log("ERROR MESSAGE:", error.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaveBalances();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchLeaveBalances();
+  };
 
   // Get unique leave types
   const leaveTypes = useMemo(() => {
-    const types = [...new Set(leaveBalances.map((item) => item.leaveType))];
-    return types.sort();
+    const types = [...new Set(leaveBalances.map((item) => item.leave_type))];
+    return types.filter(Boolean).sort();
   }, [leaveBalances]);
 
   // Combined filtering
@@ -142,7 +66,7 @@ const LeaveBalanceScreen = () => {
     // Leave Type filter
     if (selectedLeaveType) {
       filtered = filtered.filter(
-        (item) => item.leaveType === selectedLeaveType,
+        (item) => item.leave_type === selectedLeaveType,
       );
     }
 
@@ -151,9 +75,9 @@ const LeaveBalanceScreen = () => {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (item) =>
-          item.name.toLowerCase().includes(q) ||
-          item.empId.toLowerCase().includes(q) ||
-          item.leaveType.toLowerCase().includes(q),
+          item.name?.toLowerCase().includes(q) ||
+          item.emp_id?.toLowerCase().includes(q) ||
+          item.leave_type?.toLowerCase().includes(q),
       );
     }
 
@@ -172,15 +96,17 @@ const LeaveBalanceScreen = () => {
       <View style={styles.cardHeader}>
         <View style={styles.cardHeaderLeft}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
+            <Text style={styles.avatarText}>
+              {item.name?.charAt(0)?.toUpperCase() || "?"}
+            </Text>
           </View>
           <View style={styles.cardHeaderInfo}>
-            <Text style={styles.employeeName}>{item.name}</Text>
-            <Text style={styles.empId}>ID: {item.empId}</Text>
+            <Text style={styles.employeeName}>{item.name || "N/A"}</Text>
+            <Text style={styles.empId}>ID: {item.emp_id || "N/A"}</Text>
           </View>
         </View>
         <View style={styles.leaveTypeBadge}>
-          <Text style={styles.leaveTypeText}>{item.leaveType}</Text>
+          <Text style={styles.leaveTypeText}>{item.leave_type || "N/A"}</Text>
         </View>
       </View>
 
@@ -188,30 +114,30 @@ const LeaveBalanceScreen = () => {
         <View style={styles.infoRow}>
           <Ionicons name="calendar-outline" size={16} color="#666" />
           <Text style={styles.infoLabel}>DOJ:</Text>
-          <Text style={styles.infoValue}>{item.doj}</Text>
+          <Text style={styles.infoValue}>{item.doj || "N/A"}</Text>
         </View>
 
         <View style={styles.statsGrid}>
           <View style={styles.statBox}>
             <Text style={styles.statLabel}>Entitled</Text>
-            <Text style={styles.statValue}>{item.entitled}</Text>
+            <Text style={styles.statValue}>{item.entitled || 0}</Text>
           </View>
           <View style={styles.statBox}>
             <Text style={styles.statLabel}>Utilized</Text>
             <Text style={[styles.statValue, { color: "#EF4444" }]}>
-              {item.utilized}
+              {item.utilized || 0}
             </Text>
           </View>
           <View style={styles.statBox}>
             <Text style={styles.statLabel}>Balanced</Text>
             <Text style={[styles.statValue, { color: "#22C55E" }]}>
-              {item.balanced}
+              {item.balanced || 0}
             </Text>
           </View>
           <View style={styles.statBox}>
             <Text style={styles.statLabel}>Carried Fwd</Text>
             <Text style={[styles.statValue, { color: "#F59E0B" }]}>
-              {item.carriedForward}
+              {item.carried_forward || 0}
             </Text>
           </View>
         </View>
@@ -223,9 +149,27 @@ const LeaveBalanceScreen = () => {
     <View style={styles.emptyState}>
       <Ionicons name="calendar-outline" size={64} color="#ccc" />
       <Text style={styles.emptyTitle}>No leave balances found</Text>
-      <Text style={styles.emptyText}>Try adjusting your search or filters</Text>
+      <Text style={styles.emptyText}>
+        {hasActiveFilters
+          ? "Try adjusting your search or filters"
+          : "No leave balance data available"}
+      </Text>
     </View>
   );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Leave Balance</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading leave balances...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -234,7 +178,8 @@ const LeaveBalanceScreen = () => {
         <View>
           <Text style={styles.headerTitle}>Leave Balance</Text>
           <Text style={styles.headerSubtitle}>
-            {leaveBalances.length} employees
+            {leaveBalances.length}{" "}
+            {leaveBalances.length === 1 ? "employee" : "employees"}
           </Text>
         </View>
       </View>
@@ -285,29 +230,35 @@ const LeaveBalanceScreen = () => {
             <Text style={styles.filterLabel}>Leave Type</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.filterChips}>
-                {leaveTypes.map((type) => (
-                  <TouchableOpacity
-                    key={type}
-                    style={[
-                      styles.chip,
-                      selectedLeaveType === type && styles.chipActive,
-                    ]}
-                    onPress={() =>
-                      setSelectedLeaveType(
-                        selectedLeaveType === type ? "" : type,
-                      )
-                    }
-                  >
-                    <Text
+                {leaveTypes.length > 0 ? (
+                  leaveTypes.map((type) => (
+                    <TouchableOpacity
+                      key={type}
                       style={[
-                        styles.chipText,
-                        selectedLeaveType === type && styles.chipTextActive,
+                        styles.chip,
+                        selectedLeaveType === type && styles.chipActive,
                       ]}
+                      onPress={() =>
+                        setSelectedLeaveType(
+                          selectedLeaveType === type ? "" : type,
+                        )
+                      }
                     >
-                      {type}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text
+                        style={[
+                          styles.chipText,
+                          selectedLeaveType === type && styles.chipTextActive,
+                        ]}
+                      >
+                        {type}
+                      </Text>
+                    </TouchableOpacity>
+                  ))
+                ) : (
+                  <Text style={styles.noFiltersText}>
+                    No leave types available
+                  </Text>
+                )}
               </View>
             </ScrollView>
           </View>
@@ -337,12 +288,34 @@ const LeaveBalanceScreen = () => {
       {filteredBalances.length > 0 ? (
         <FlatList
           data={filteredBalances}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) =>
+            item.id?.toString() || index.toString()
+          }
           renderItem={renderBalanceItem}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#007AFF"]}
+              tintColor="#007AFF"
+            />
+          }
         />
       ) : (
-        renderEmptyState()
+        <ScrollView
+          contentContainerStyle={styles.emptyStateContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#007AFF"]}
+              tintColor="#007AFF"
+            />
+          }
+        >
+          {renderEmptyState()}
+        </ScrollView>
       )}
     </SafeAreaView>
   );
@@ -354,6 +327,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#666",
   },
   header: {
     flexDirection: "row",
@@ -448,6 +431,11 @@ const styles = StyleSheet.create({
   chipTextActive: {
     color: "#fff",
     fontWeight: "500",
+  },
+  noFiltersText: {
+    fontSize: 13,
+    color: "#888",
+    fontStyle: "italic",
   },
   clearFilters: {
     paddingVertical: 8,
@@ -570,6 +558,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#007AFF",
   },
+  emptyStateContainer: {
+    flex: 1,
+  },
   emptyState: {
     flex: 1,
     justifyContent: "center",
@@ -586,5 +577,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: "#888",
+    textAlign: "center",
   },
 });

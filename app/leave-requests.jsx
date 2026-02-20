@@ -1,16 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-    FlatList,
-    Modal,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Modal,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+
+import api from "../src/services/api";
 
 const LeaveRequestsScreen = () => {
   const [activeTab, setActiveTab] = useState("all");
@@ -20,114 +24,126 @@ const LeaveRequestsScreen = () => {
   const [selectedType, setSelectedType] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
 
-  const [leaveRequests, setLeaveRequests] = useState([
-    {
-      id: "LR001",
-      employee: "Samuel Adisi",
-      type: "Annual Leave",
-      from: "2024-08-01",
-      to: "2024-08-05",
-      days: 5,
-      status: "Pending",
-      reason: "Family vacation to the northern region",
-      submittedDate: "2024-07-15",
-    },
-    {
-      id: "LR002",
-      employee: "Michael Obeng",
-      type: "Sick Leave",
-      from: "2024-07-20",
-      to: "2024-07-22",
-      days: 3,
-      status: "Approved",
-      reason: "Medical rest due to flu",
-      submittedDate: "2024-07-18",
-      approvedBy: "Samuel Adisi",
-      approvedDate: "2024-07-19",
-    },
-    {
-      id: "LR003",
-      employee: "Emily Anani",
-      type: "Casual Leave",
-      from: "2024-07-18",
-      to: "2024-07-18",
-      days: 1,
-      status: "Rejected",
-      reason: "Personal matter",
-      submittedDate: "2024-07-17",
-      rejectedBy: "Samuel Adisi",
-      rejectedDate: "2024-07-17",
-      rejectionReason: "Insufficient notice period",
-    },
-    {
-      id: "LR004",
-      employee: "David Yaw",
-      type: "Annual Leave",
-      from: "2024-08-10",
-      to: "2024-08-15",
-      days: 6,
-      status: "Pending",
-      reason: "Wedding ceremony",
-      submittedDate: "2024-07-20",
-    },
-    {
-      id: "LR005",
-      employee: "Samuel Adisi",
-      type: "Emergency Leave",
-      from: "2024-07-25",
-      to: "2024-07-26",
-      days: 2,
-      status: "Approved",
-      reason: "Family emergency",
-      submittedDate: "2024-07-24",
-      approvedBy: "Emily Anani",
-      approvedDate: "2024-07-24",
-    },
-  ]);
+  const [leaveRequests, setLeaveRequests] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [statistics, setStatistics] = useState({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+  });
 
-  // Get unique leave types and statuses
-  const leaveTypes = useMemo(() => {
-    const types = [...new Set(leaveRequests.map((req) => req.type))];
-    return types.sort();
-  }, [leaveRequests]);
+  // Available leave types (you can also fetch this from API if needed)
+  const leaveTypes = [
+    "Annual Leave",
+    "Sick Leave",
+    "Casual Leave",
+    "Emergency Leave",
+    "Maternity Leave",
+    "Paternity Leave",
+  ];
 
   const statuses = ["Pending", "Approved", "Rejected"];
 
-  // Combined filtering
-  const filteredRequests = useMemo(() => {
-    let filtered = leaveRequests;
+  // Fetch leave requests from API
+  const fetchLeaveRequests = useCallback(async () => {
+    try {
+      setIsLoading(true);
 
-    // Tab filter
-    if (activeTab !== "all") {
-      filtered = filtered.filter(
-        (r) => r.status.toLowerCase() === activeTab.toLowerCase(),
+      // Build query parameters
+      const params = new URLSearchParams();
+
+      // Status filter from tab
+      if (activeTab !== "all") {
+        params.append(
+          "status",
+          activeTab.charAt(0).toUpperCase() + activeTab.slice(1),
+        );
+      }
+
+      // Additional status filter (when on 'all' tab)
+      if (selectedStatus && activeTab === "all") {
+        params.append("status", selectedStatus);
+      }
+
+      // Leave type filter
+      if (selectedType) {
+        params.append("leave_type", selectedType);
+      }
+
+      // Search query
+      if (searchQuery.trim()) {
+        params.append("search", searchQuery.trim());
+      }
+
+      // Ordering (most recent first)
+      params.append("ordering", "-created_at");
+
+      const queryString = params.toString();
+      const url = `/api/leave-requests/${queryString ? `?${queryString}` : ""}`;
+
+      const res = await api.get(url);
+
+      if (res.status === 200) {
+        setLeaveRequests(res.data);
+        console.log(res.data);
+      }
+    } catch (error) {
+      console.log(
+        "Error fetching leave requests:",
+        error.response?.data || error,
       );
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
     }
+  }, [activeTab, searchQuery, selectedType, selectedStatus]);
 
-    // Type filter
-    if (selectedType) {
-      filtered = filtered.filter((r) => r.type === selectedType);
+  // Fetch statistics
+  const fetchStatistics = async () => {
+    try {
+      const res = await api.get("/api/leave-requests/statistics/");
+      if (res.status === 200) {
+        setStatistics({
+          total: res.data.total || 0,
+          pending: res.data.pending || 0,
+          approved: res.data.approved || 0,
+          rejected: res.data.rejected || 0,
+        });
+      }
+    } catch (error) {
+      console.log("Error fetching statistics:", error.response?.data || error);
     }
+  };
 
-    // Status filter (only when on 'all' tab)
-    if (selectedStatus && activeTab === "all") {
-      filtered = filtered.filter((r) => r.status === selectedStatus);
-    }
+  // Initial load
+  useEffect(() => {
+    fetchLeaveRequests();
+    fetchStatistics();
+  }, []);
 
-    // Search filter
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (r) =>
-          r.employee.toLowerCase().includes(q) ||
-          r.type.toLowerCase().includes(q) ||
-          r.id.toLowerCase().includes(q) ||
-          r.reason.toLowerCase().includes(q),
-      );
-    }
+  // Reload when filters change
+  useEffect(() => {
+    fetchLeaveRequests();
+  }, [fetchLeaveRequests]);
 
-    return filtered;
-  }, [leaveRequests, activeTab, searchQuery, selectedType, selectedStatus]);
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery !== undefined) {
+        fetchLeaveRequests();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const onRefresh = () => {
+    setIsRefreshing(true);
+    fetchLeaveRequests();
+    fetchStatistics();
+  };
 
   const clearAllFilters = () => {
     setSearchQuery("");
@@ -148,37 +164,53 @@ const LeaveRequestsScreen = () => {
     }
   };
 
-  const handleApprove = (request) => {
-    setLeaveRequests((prev) =>
-      prev.map((r) =>
-        r.id === request.id
-          ? {
-              ...r,
-              status: "Approved",
-              approvedBy: "Current User",
-              approvedDate: new Date().toISOString().split("T")[0],
-            }
-          : r,
-      ),
-    );
-    setSelectedRequest(null);
+  const handleLeaveBalance = async (request) => {
+    try {
+      const res = await api.post(`/api/leave-balance/${request.id}/`);
+
+      if (res.status === 200) {
+        console.log(res.data);
+      }
+    } catch (error) {
+      console.log(
+        "Error processing leave balance:",
+        error.response?.data || error,
+      );
+    }
   };
 
-  const handleReject = (request) => {
-    setLeaveRequests((prev) =>
-      prev.map((r) =>
-        r.id === request.id
-          ? {
-              ...r,
-              status: "Rejected",
-              rejectedBy: "Current User",
-              rejectedDate: new Date().toISOString().split("T")[0],
-              rejectionReason: "Not specified",
-            }
-          : r,
-      ),
-    );
-    setSelectedRequest(null);
+  const handleApprove = async (request) => {
+    try {
+      const res = await api.post(`/api/approve-leave/${request.id}/`);
+
+      if (res.status === 200) {
+        setSelectedRequest(null);
+        fetchLeaveRequests();
+        fetchStatistics();
+        handleLeaveBalance(request);
+      }
+    } catch (error) {
+      console.log("Error approving request:", error.response?.data || error);
+      alert("Failed to approve request. Please try again.");
+    }
+  };
+
+  const handleReject = async (request) => {
+    try {
+      const res = await api.post(`/api/reject-leave/${request.id}/`, {
+        status: "Rejected",
+        rejection_reason: "Not specified",
+      });
+
+      if (res.status === 200) {
+        setSelectedRequest(null);
+        fetchLeaveRequests();
+        fetchStatistics();
+      }
+    } catch (error) {
+      console.log("Error rejecting request:", error.response?.data || error);
+      alert("Failed to reject request. Please try again.");
+    }
   };
 
   const renderRequest = ({ item }) => (
@@ -190,11 +222,15 @@ const LeaveRequestsScreen = () => {
       <View style={styles.cardHeader}>
         <View style={styles.cardHeaderLeft}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{item.employee.charAt(0)}</Text>
+            <Text style={styles.avatarText}>
+              {item.employee_name ? item.employee_name.charAt(0) : "U"}
+            </Text>
           </View>
           <View style={styles.cardHeaderInfo}>
-            <Text style={styles.employeeName}>{item.employee}</Text>
-            <Text style={styles.requestId}>{item.id}</Text>
+            <Text style={styles.employeeName}>
+              {item.employee_name || "Unknown"}
+            </Text>
+            <Text style={styles.requestId}>{`#${item.id}`}</Text>
           </View>
         </View>
         <View
@@ -210,20 +246,20 @@ const LeaveRequestsScreen = () => {
       <View style={styles.cardBody}>
         <View style={styles.typeRow}>
           <Ionicons name="document-text-outline" size={16} color="#666" />
-          <Text style={styles.leaveType}>{item.type}</Text>
+          <Text style={styles.leaveType}>{item.leave_type}</Text>
         </View>
 
         <View style={styles.dateRow}>
           <Ionicons name="calendar-outline" size={16} color="#666" />
           <Text style={styles.dateText}>
-            {item.from} → {item.to}
+            {item.start_date} → {item.end_date}
           </Text>
         </View>
 
         <View style={styles.daysRow}>
           <Ionicons name="time-outline" size={16} color="#666" />
           <Text style={styles.daysText}>
-            {item.days} day{item.days > 1 ? "s" : ""}
+            {item.total_days} day{item.total_days > 1 ? "s" : ""}
           </Text>
         </View>
       </View>
@@ -234,23 +270,25 @@ const LeaveRequestsScreen = () => {
     <View style={styles.emptyState}>
       <Ionicons name="document-outline" size={64} color="#ccc" />
       <Text style={styles.emptyTitle}>No leave requests found</Text>
-      <Text style={styles.emptyText}>Try adjusting your search or filters</Text>
+      <Text style={styles.emptyText}>
+        {hasActiveFilters
+          ? "Try adjusting your search or filters"
+          : "No leave requests available"}
+      </Text>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Leave Requests</Text>
           <Text style={styles.headerSubtitle}>
-            {leaveRequests.length} total requests
+            {statistics.total} total requests
           </Text>
         </View>
       </View>
 
-      {/* Tabs */}
       <View style={styles.tabs}>
         {[
           { key: "all", label: "All" },
@@ -275,7 +313,6 @@ const LeaveRequestsScreen = () => {
         ))}
       </View>
 
-      {/* Search and Filter */}
       <View style={styles.searchSection}>
         <View style={styles.searchBar}>
           <Ionicons
@@ -314,7 +351,6 @@ const LeaveRequestsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Filter Section */}
       {showFilters && (
         <View style={styles.filterSection}>
           <View style={styles.filterGroup}>
@@ -390,29 +426,33 @@ const LeaveRequestsScreen = () => {
         </View>
       )}
 
-      {/* Results Bar */}
       {hasActiveFilters && (
         <View style={styles.resultsBar}>
           <Text style={styles.resultsText}>
-            {filteredRequests.length}{" "}
-            {filteredRequests.length === 1 ? "result" : "results"}
+            {leaveRequests.length}{" "}
+            {leaveRequests.length === 1 ? "result" : "results"}
           </Text>
         </View>
       )}
 
-      {/* List */}
-      {filteredRequests.length > 0 ? (
+      {isLoading && !isRefreshing ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+      ) : leaveRequests.length > 0 ? (
         <FlatList
-          data={filteredRequests}
-          keyExtractor={(item) => item.id}
+          data={leaveRequests}
+          keyExtractor={(item) => item.id.toString()}
           renderItem={renderRequest}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+          }
         />
       ) : (
         renderEmptyState()
       )}
 
-      {/* Details Modal */}
       <Modal
         visible={!!selectedRequest}
         transparent
@@ -421,7 +461,6 @@ const LeaveRequestsScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            {/* Header */}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Leave Request Details</Text>
               <TouchableOpacity onPress={() => setSelectedRequest(null)}>
@@ -429,27 +468,35 @@ const LeaveRequestsScreen = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Body (SCROLLABLE) */}
             {selectedRequest && (
               <ScrollView style={styles.modalBody}>
                 <View style={styles.detailSection}>
                   <Text style={styles.sectionTitle}>Request Information</Text>
-                  <Detail label="Request ID" value={selectedRequest.id} />
-                  <Detail label="Employee" value={selectedRequest.employee} />
-                  <Detail label="Leave Type" value={selectedRequest.type} />
+                  <Detail label="Request ID" value={`#${selectedRequest.id}`} />
+                  <Detail
+                    label="Employee"
+                    value={selectedRequest.employee_name || "Unknown"}
+                  />
+                  <Detail
+                    label="Leave Type"
+                    value={selectedRequest.leave_type}
+                  />
                   <Detail
                     label="Submitted Date"
-                    value={selectedRequest.submittedDate}
+                    value={selectedRequest.created_at?.split("T")[0] || "N/A"}
                   />
                 </View>
 
                 <View style={styles.detailSection}>
                   <Text style={styles.sectionTitle}>Leave Period</Text>
-                  <Detail label="Start Date" value={selectedRequest.from} />
-                  <Detail label="End Date" value={selectedRequest.to} />
+                  <Detail
+                    label="Start Date"
+                    value={selectedRequest.start_date}
+                  />
+                  <Detail label="End Date" value={selectedRequest.end_date} />
                   <Detail
                     label="Duration"
-                    value={`${selectedRequest.days} day${selectedRequest.days > 1 ? "s" : ""}`}
+                    value={`${selectedRequest.total_days} day${selectedRequest.total_days > 1 ? "s" : ""}`}
                   />
                 </View>
 
@@ -477,11 +524,13 @@ const LeaveRequestsScreen = () => {
                     <>
                       <Detail
                         label="Approved By"
-                        value={selectedRequest.approvedBy}
+                        value={selectedRequest.approved_by_name || "N/A"}
                       />
                       <Detail
                         label="Approved Date"
-                        value={selectedRequest.approvedDate}
+                        value={
+                          selectedRequest.approved_at?.split("T")[0] || "N/A"
+                        }
                       />
                     </>
                   )}
@@ -490,16 +539,18 @@ const LeaveRequestsScreen = () => {
                     <>
                       <Detail
                         label="Rejected By"
-                        value={selectedRequest.rejectedBy}
+                        value={selectedRequest.rejected_by || "N/A"}
                       />
                       <Detail
                         label="Rejected Date"
-                        value={selectedRequest.rejectedDate}
+                        value={
+                          selectedRequest.rejected_at?.split("T")[0] || "N/A"
+                        }
                       />
-                      {selectedRequest.rejectionReason && (
+                      {selectedRequest.rejection_reason && (
                         <Detail
                           label="Rejection Reason"
-                          value={selectedRequest.rejectionReason}
+                          value={selectedRequest.rejection_reason}
                         />
                       )}
                     </>
@@ -508,7 +559,6 @@ const LeaveRequestsScreen = () => {
               </ScrollView>
             )}
 
-            {/* Footer (FIXED) - Only show for pending requests */}
             {selectedRequest?.status === "Pending" && (
               <View style={styles.modalFooter}>
                 <TouchableOpacity
@@ -690,6 +740,11 @@ const styles = StyleSheet.create({
   resultsText: {
     fontSize: 13,
     color: "#666",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   list: {
     padding: 12,

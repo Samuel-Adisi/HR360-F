@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
-  Image,
   Modal,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -13,188 +14,88 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import api from "../src/services/api";
 
 const AllProjectsScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
-  const [sortBy, setSortBy] = useState("name"); // name, deadline, status
+  const [sortBy, setSortBy] = useState("-created_at"); // Django ordering format
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
-  const [projects, setProjects] = useState([
-    {
-      id: 1,
-      name: "MarQ Angular 6",
-      clientName: "Donald",
-      deadline: "02-03-2019",
-      teamMembers: [
-        { id: 1, name: "John Doe", image: "https://i.pravatar.cc/150?img=12" },
-        {
-          id: 2,
-          name: "Jane Smith",
-          image: "https://i.pravatar.cc/150?img=45",
-        },
-        {
-          id: 3,
-          name: "Mike Brown",
-          image: "https://i.pravatar.cc/150?img=33",
-        },
-      ],
-      teamCount: 14,
-      status: "Pending",
-      progress: 35,
-    },
-    {
-      id: 2,
-      name: "Redstar Hospital",
-      clientName: "Rajesh",
-      deadline: "11-10-2018",
-      teamMembers: [
-        { id: 4, name: "Sarah Lee", image: "https://i.pravatar.cc/150?img=47" },
-        {
-          id: 5,
-          name: "Tom Wilson",
-          image: "https://i.pravatar.cc/150?img=15",
-        },
-        { id: 6, name: "Lisa Chen", image: "https://i.pravatar.cc/150?img=32" },
-      ],
-      teamCount: 12,
-      status: "Active",
-      progress: 65,
-    },
-    {
-      id: 3,
-      name: "Smart University",
-      clientName: "John Wick",
-      deadline: "22-07-2019",
-      teamMembers: [
-        {
-          id: 7,
-          name: "Alex Johnson",
-          image: "https://i.pravatar.cc/150?img=13",
-        },
-        {
-          id: 8,
-          name: "Emma Davis",
-          image: "https://i.pravatar.cc/150?img=44",
-        },
-        {
-          id: 9,
-          name: "Chris Martin",
-          image: "https://i.pravatar.cc/150?img=17",
-        },
-      ],
-      teamCount: 13,
-      status: "Closed",
-      progress: 100,
-    },
-    {
-      id: 4,
-      name: "Smile Admin",
-      clientName: "Sarah Smith",
-      deadline: "18-12-2018",
-      teamMembers: [
-        {
-          id: 10,
-          name: "Robert Green",
-          image: "https://i.pravatar.cc/150?img=11",
-        },
-        {
-          id: 11,
-          name: "Nina White",
-          image: "https://i.pravatar.cc/150?img=48",
-        },
-        {
-          id: 12,
-          name: "Kevin Black",
-          image: "https://i.pravatar.cc/150?img=59",
-        },
-      ],
-      teamCount: 17,
-      status: "Active",
-      progress: 78,
-    },
-    {
-      id: 5,
-      name: "SpinzHR Admin",
-      clientName: "Sarah Smith",
-      deadline: "18-12-2018",
-      teamMembers: [
-        {
-          id: 13,
-          name: "David Lee",
-          image: "https://i.pravatar.cc/150?img=68",
-        },
-        {
-          id: 14,
-          name: "Maria Garcia",
-          image: "https://i.pravatar.cc/150?img=27",
-        },
-        {
-          id: 15,
-          name: "James Taylor",
-          image: "https://i.pravatar.cc/150?img=51",
-        },
-      ],
-      teamCount: 17,
-      status: "Active",
-      progress: 82,
-    },
-    {
-      id: 6,
-      name: "Sunray Hospital",
-      clientName: "John Wick",
-      deadline: "22-07-2019",
-      teamMembers: [
-        {
-          id: 16,
-          name: "Anna Brown",
-          image: "https://i.pravatar.cc/150?img=31",
-        },
-        {
-          id: 17,
-          name: "Peter Clark",
-          image: "https://i.pravatar.cc/150?img=60",
-        },
-        {
-          id: 18,
-          name: "Sophie Turner",
-          image: "https://i.pravatar.cc/150?img=25",
-        },
-      ],
-      teamCount: 13,
-      status: "Closed",
-      progress: 100,
-    },
-    {
-      id: 7,
-      name: "Xyz Website",
-      clientName: "Rajesh",
-      deadline: "11-10-2018",
-      teamMembers: [
-        {
-          id: 19,
-          name: "Oliver King",
-          image: "https://i.pravatar.cc/150?img=56",
-        },
-        {
-          id: 20,
-          name: "Emily Scott",
-          image: "https://i.pravatar.cc/150?img=49",
-        },
-        {
-          id: 21,
-          name: "Lucas Hill",
-          image: "https://i.pravatar.cc/150?img=14",
-        },
-      ],
-      teamCount: 12,
-      status: "Active",
-      progress: 45,
-    },
-  ]);
+  const statuses = ["All", "Active", "Pending", "On Hold", "Closed"];
 
-  const statuses = ["All", "Active", "Pending", "Closed"];
+  // Fetch projects from API
+  const fetchProjects = useCallback(
+    async (isRefreshing = false) => {
+      try {
+        if (isRefreshing) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+        setError(null);
+
+        // Build query parameters
+        const params = new URLSearchParams();
+
+        // Add search query
+        if (searchQuery.trim()) {
+          params.append("search", searchQuery.trim());
+        }
+
+        // Add status filter
+        if (selectedStatus && selectedStatus !== "All") {
+          params.append("status", selectedStatus);
+        }
+
+        // Add ordering
+        if (sortBy) {
+          params.append("ordering", sortBy);
+        }
+
+        const queryString = params.toString();
+        console.log(queryString);
+        const url = `/api/projects/${queryString ? `?${queryString}` : ""}`;
+
+        console.log("Fetching projects from:", url);
+        const response = await api.get(url);
+
+        setProjects(response.data);
+      } catch (err) {
+        console.error("Error fetching projects:", err);
+        setError(err.response?.data?.detail || "Failed to load projects");
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [searchQuery, selectedStatus, sortBy],
+  );
+
+  // Initial fetch
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery !== undefined) {
+        fetchProjects();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const onRefresh = () => {
+    fetchProjects(true);
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -204,6 +105,8 @@ const AllProjectsScreen = () => {
         return "#FF9500";
       case "Closed":
         return "#FF3B30";
+      case "On Hold":
+        return "#8E8E93";
       default:
         return "#999";
     }
@@ -217,52 +120,27 @@ const AllProjectsScreen = () => {
         return "#FFF3E0";
       case "Closed":
         return "#FFEBEE";
+      case "On Hold":
+        return "#F5F5F5";
       default:
         return "#f5f5f5";
     }
   };
 
-  const filteredAndSortedProjects = useMemo(() => {
-    let filtered = projects;
-
-    // Apply status filter
-    if (selectedStatus && selectedStatus !== "All") {
-      filtered = filtered.filter((proj) => proj.status === selectedStatus);
-    }
-
-    // Apply search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter((proj) => {
-        return (
-          proj.name.toLowerCase().includes(query) ||
-          proj.clientName.toLowerCase().includes(query) ||
-          proj.status.toLowerCase().includes(query)
-        );
-      });
-    }
-
-    // Apply sorting
-    const sorted = [...filtered].sort((a, b) => {
-      if (sortBy === "name") {
-        return a.name.localeCompare(b.name);
-      } else if (sortBy === "deadline") {
-        return (
-          new Date(a.deadline.split("-").reverse().join("-")) -
-          new Date(b.deadline.split("-").reverse().join("-"))
-        );
-      } else if (sortBy === "status") {
-        return a.status.localeCompare(b.status);
-      }
-      return 0;
-    });
-
-    return sorted;
-  }, [projects, searchQuery, selectedStatus, sortBy]);
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
 
   const clearFilters = () => {
     setSearchQuery("");
     setSelectedStatus("");
+    setSortBy("-created_at");
   };
 
   const hasActiveFilters =
@@ -279,7 +157,7 @@ const AllProjectsScreen = () => {
           <Text style={styles.projectName}>{item.name}</Text>
           <View style={styles.clientRow}>
             <Ionicons name="person-outline" size={14} color="#666" />
-            <Text style={styles.clientName}>{item.clientName}</Text>
+            <Text style={styles.clientName}>{item.client_name}</Text>
           </View>
         </View>
         <View
@@ -299,28 +177,17 @@ const AllProjectsScreen = () => {
       <View style={styles.cardBody}>
         <View style={styles.infoRow}>
           <Ionicons name="calendar-outline" size={16} color="#666" />
-          <Text style={styles.infoText}>Deadline: {item.deadline}</Text>
+          <Text style={styles.infoText}>
+            Deadline: {formatDate(item.deadline)}
+          </Text>
         </View>
 
-        <View style={styles.teamSection}>
-          <View style={styles.avatarGroup}>
-            {item.teamMembers.slice(0, 3).map((member, index) => (
-              <Image
-                key={member.id}
-                source={{ uri: member.image }}
-                style={[styles.avatar, index > 0 && { marginLeft: -8 }]}
-              />
-            ))}
-            {item.teamCount > 3 && (
-              <View
-                style={[styles.avatar, styles.avatarMore, { marginLeft: -8 }]}
-              >
-                <Text style={styles.avatarMoreText}>+{item.teamCount - 3}</Text>
-              </View>
-            )}
+        {item.category && (
+          <View style={styles.infoRow}>
+            <Ionicons name="folder-outline" size={16} color="#666" />
+            <Text style={styles.infoText}>{item.category}</Text>
           </View>
-          <Text style={styles.teamCount}>{item.teamCount} members</Text>
-        </View>
+        )}
 
         <View style={styles.progressSection}>
           <View style={styles.progressHeader}>
@@ -373,14 +240,30 @@ const AllProjectsScreen = () => {
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Client</Text>
                   <Text style={styles.detailValue}>
-                    {selectedProject.clientName}
+                    {selectedProject.client_name}
+                  </Text>
+                </View>
+
+                {selectedProject.category && (
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Category</Text>
+                    <Text style={styles.detailValue}>
+                      {selectedProject.category}
+                    </Text>
+                  </View>
+                )}
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Start Date</Text>
+                  <Text style={styles.detailValue}>
+                    {formatDate(selectedProject.start_date)}
                   </Text>
                 </View>
 
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Deadline</Text>
                   <Text style={styles.detailValue}>
-                    {selectedProject.deadline}
+                    {formatDate(selectedProject.deadline)}
                   </Text>
                 </View>
 
@@ -406,34 +289,32 @@ const AllProjectsScreen = () => {
                     </Text>
                   </View>
                 </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Priority</Text>
+                  <Text style={styles.detailValue}>
+                    {selectedProject.priority}
+                  </Text>
+                </View>
+
+                {selectedProject.budget && (
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Budget</Text>
+                    <Text style={styles.detailValue}>
+                      ${selectedProject.budget}
+                    </Text>
+                  </View>
+                )}
               </View>
 
-              <View style={styles.detailSection}>
-                <Text style={styles.sectionTitle}>
-                  Team Members ({selectedProject.teamCount})
-                </Text>
-                <View style={styles.teamGrid}>
-                  {selectedProject.teamMembers.map((member) => (
-                    <View key={member.id} style={styles.teamMemberItem}>
-                      <Image
-                        source={{ uri: member.image }}
-                        style={styles.teamAvatar}
-                      />
-                      <Text style={styles.teamMemberName}>{member.name}</Text>
-                    </View>
-                  ))}
-                  {selectedProject.teamCount > 3 && (
-                    <View style={styles.teamMemberItem}>
-                      <View style={[styles.teamAvatar, styles.teamAvatarMore]}>
-                        <Text style={styles.teamAvatarMoreText}>
-                          +{selectedProject.teamCount - 3}
-                        </Text>
-                      </View>
-                      <Text style={styles.teamMemberName}>More</Text>
-                    </View>
-                  )}
+              {selectedProject.description && (
+                <View style={styles.detailSection}>
+                  <Text style={styles.sectionTitle}>Description</Text>
+                  <Text style={styles.descriptionText}>
+                    {selectedProject.description}
+                  </Text>
                 </View>
-              </View>
+              )}
 
               <View style={styles.detailSection}>
                 <Text style={styles.sectionTitle}>Progress</Text>
@@ -465,13 +346,11 @@ const AllProjectsScreen = () => {
                 style={styles.viewButton}
                 onPress={() => {
                   setSelectedProject(null);
-                  // Navigate to project details
-                  console.log("Navigate to project:", selectedProject.id);
-                  router.push("./edit-project");
+                  router.push(`/edit-project/${selectedProject.id}`);
                 }}
               >
-                <Ionicons name="open-outline" size={20} color="#fff" />
-                <Text style={styles.viewButtonText}>View Full Project</Text>
+                <Ionicons name="create-outline" size={20} color="#fff" />
+                <Text style={styles.viewButtonText}>Edit Project</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -480,13 +359,53 @@ const AllProjectsScreen = () => {
     );
   };
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <Ionicons name="folder-open-outline" size={64} color="#ccc" />
-      <Text style={styles.emptyTitle}>No projects found</Text>
-      <Text style={styles.emptyText}>Try adjusting your search or filters</Text>
-    </View>
-  );
+  const renderEmptyState = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading projects...</Text>
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.emptyState}>
+          <Ionicons name="alert-circle-outline" size={64} color="#FF3B30" />
+          <Text style={styles.emptyTitle}>Error Loading Projects</Text>
+          <Text style={styles.emptyText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => fetchProjects()}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyState}>
+        <Ionicons name="folder-open-outline" size={64} color="#ccc" />
+        <Text style={styles.emptyTitle}>No projects found</Text>
+        <Text style={styles.emptyText}>
+          {hasActiveFilters
+            ? "Try adjusting your search or filters"
+            : "Create your first project to get started"}
+        </Text>
+        {!hasActiveFilters && (
+          <TouchableOpacity
+            style={styles.createButton}
+            onPress={() => router.push("./add-project")}
+          >
+            <Ionicons name="add" size={20} color="#fff" />
+            <Text style={styles.createButtonText}>Create Project</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -494,7 +413,7 @@ const AllProjectsScreen = () => {
         <View>
           <Text style={styles.headerTitle}>All Projects</Text>
           <Text style={styles.headerSubtitle}>
-            {projects.length} total projects
+            {projects.length} {projects.length === 1 ? "project" : "projects"}
           </Text>
         </View>
         <TouchableOpacity
@@ -558,9 +477,10 @@ const AllProjectsScreen = () => {
                         (status === "All" && !selectedStatus)) &&
                         styles.chipActive,
                     ]}
-                    onPress={() =>
-                      setSelectedStatus(status === "All" ? "" : status)
-                    }
+                    onPress={() => {
+                      const newStatus = status === "All" ? "" : status;
+                      setSelectedStatus(newStatus);
+                    }}
                   >
                     <Text
                       style={[
@@ -583,9 +503,14 @@ const AllProjectsScreen = () => {
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.filterChips}>
                 {[
-                  { key: "name", label: "Name" },
-                  { key: "deadline", label: "Deadline" },
-                  { key: "status", label: "Status" },
+                  { key: "name", label: "Name A-Z" },
+                  { key: "-name", label: "Name Z-A" },
+                  { key: "deadline", label: "Deadline (Soon)" },
+                  { key: "-deadline", label: "Deadline (Late)" },
+                  { key: "-created_at", label: "Newest First" },
+                  { key: "created_at", label: "Oldest First" },
+                  { key: "-progress", label: "Progress (High)" },
+                  { key: "progress", label: "Progress (Low)" },
                 ].map((sort) => (
                   <TouchableOpacity
                     key={sort.key}
@@ -620,22 +545,24 @@ const AllProjectsScreen = () => {
         </View>
       )}
 
-      {hasActiveFilters && (
+      {hasActiveFilters && !loading && (
         <View style={styles.resultsBar}>
           <Text style={styles.resultsText}>
-            {filteredAndSortedProjects.length}{" "}
-            {filteredAndSortedProjects.length === 1 ? "result" : "results"}
+            {projects.length} {projects.length === 1 ? "result" : "results"}
           </Text>
         </View>
       )}
 
-      {filteredAndSortedProjects.length > 0 ? (
+      {projects.length > 0 ? (
         <FlatList
-          data={filteredAndSortedProjects}
+          data={projects}
           renderItem={renderProjectCard}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         />
       ) : (
         renderEmptyState()
@@ -831,35 +758,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#666",
   },
-  teamSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  avatarGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-  avatarMore: {
-    backgroundColor: "#f5f5f5",
-    borderColor: "#e0e0e0",
-  },
-  avatarMoreText: {
-    color: "#666",
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  teamCount: {
-    fontSize: 13,
-    color: "#666",
-  },
   progressSection: {
     gap: 6,
   },
@@ -888,11 +786,23 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 3,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
+  },
   emptyState: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 60,
+    paddingHorizontal: 32,
   },
   emptyTitle: {
     fontSize: 18,
@@ -904,6 +814,34 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: "#888",
+    textAlign: "center",
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: "#007AFF",
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  createButton: {
+    marginTop: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: "#007AFF",
+    borderRadius: 8,
+  },
+  createButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
   modalOverlay: {
     flex: 1,
@@ -958,33 +896,10 @@ const styles = StyleSheet.create({
     color: "#222",
     fontWeight: "500",
   },
-  teamGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  teamMemberItem: {
-    alignItems: "center",
-    width: 70,
-  },
-  teamAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginBottom: 6,
-  },
-  teamAvatarMore: {
-    backgroundColor: "#f5f5f5",
-  },
-  teamAvatarMoreText: {
-    color: "#666",
+  descriptionText: {
     fontSize: 14,
-    fontWeight: "600",
-  },
-  teamMemberName: {
-    fontSize: 12,
     color: "#666",
-    textAlign: "center",
+    lineHeight: 20,
   },
   modalFooter: {
     padding: 16,

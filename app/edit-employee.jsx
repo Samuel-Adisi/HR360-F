@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -13,34 +13,36 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const EditEmployeeScreen = ({ navigation }) => {
+import { useLocalSearchParams } from "expo-router";
+import api from "../src/services/api";
+
+const EditEmployeeScreen = ({ route }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Dummy employee data
-  const [formData, setFormData] = useState({
-    firstName: "Samuel",
-    lastName: "Adisi",
-    email: "samuel.adisi@company.com",
-    phone: "+1 555-0101",
-    dateOfBirth: "1990-05-15",
-    address: "123 Main Street",
-    city: "San Francisco",
-    state: "CA",
-    zipCode: "94105",
-    employeeId: "EMP001",
-    position: "Senior Developer",
-    department: "Technology",
-    hireDate: "2020-02-14",
-    employmentType: "Full-time",
-    workLocation: "Hybrid",
-    managerId: "2",
-    salary: "125000",
-    payFrequency: "Bi-weekly",
-    emergencyContact: "Jane Adisi",
-    emergencyPhone: "+1 555-0199",
-    notes: "Excellent team player with strong technical skills.",
-  });
+  const [formData, setFormData] = useState({});
+
+  const { employeeID } = useLocalSearchParams();
+
+  useEffect(() => {
+    async function fetchEmployee() {
+      try {
+        const res = await api.get(`/api/employees/${employeeID}`);
+        console.log("id is", employeeID);
+
+        if (res.status == 200) {
+          setFormData(res.data.employee);
+          console.log(res.data.employee);
+        }
+      } catch (error) {
+        console.log("ERROR DATA:", error.response?.data);
+        console.log("ERROR STATUS:", error.response?.status);
+        console.log("ERROR MESSAGE:", error.message);
+      }
+    }
+
+    fetchEmployee();
+  }, []);
 
   const [errors, setErrors] = useState({});
 
@@ -56,23 +58,23 @@ const EditEmployeeScreen = ({ navigation }) => {
     const newErrors = {};
 
     if (step === 1) {
-      if (!formData.firstName.trim())
-        newErrors.firstName = "First name is required";
-      if (!formData.lastName.trim())
-        newErrors.lastName = "Last name is required";
-      if (!formData.email.trim()) {
+      if (!formData.first_name?.trim())
+        newErrors.first_name = "First name is required";
+      if (!formData.last_name?.trim())
+        newErrors.last_name = "Last name is required";
+      if (!formData.email?.trim()) {
         newErrors.email = "Email is required";
       } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
         newErrors.email = "Invalid email format";
       }
-      if (!formData.phone.trim()) newErrors.phone = "Phone is required";
+      if (!formData.phone?.trim()) newErrors.phone = "Phone is required";
     } else if (step === 2) {
-      if (!formData.position.trim())
+      if (!formData.position?.trim())
         newErrors.position = "Position is required";
-      if (!formData.department.trim())
+      if (!formData.department?.trim())
         newErrors.department = "Department is required";
-      if (!formData.hireDate.trim())
-        newErrors.hireDate = "Hire date is required";
+      if (!formData.hire_date?.trim())
+        newErrors.hire_date = "Hire date is required";
     }
 
     setErrors(newErrors);
@@ -89,21 +91,32 @@ const EditEmployeeScreen = ({ navigation }) => {
     setCurrentStep((prev) => prev - 1);
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (validateStep(currentStep)) {
-      Alert.alert("Success", "Employee updated successfully!", [
-        {
-          text: "OK",
-          onPress: () => navigation?.goBack(),
-        },
-      ]);
+      try {
+        const res = await api.put(`/api/employees/${employeeID}/`, formData);
+
+        if (res.status === 200) {
+          console.log("Employee updated:", res.data);
+          Alert.alert("Success", "Employee updated successfully!", [
+            {
+              text: "OK",
+              onPress: () => navigation?.goBack(),
+            },
+          ]);
+        }
+      } catch (error) {
+        console.log("ERROR DATA:", error.response?.data);
+        console.log("ERROR STATUS:", error.response?.status);
+        Alert.alert("Error", "Failed to update employee. Please try again.");
+      }
     }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     Alert.alert(
       "Delete Employee",
-      `Are you sure you want to delete ${formData.firstName} ${formData.lastName}? This action cannot be undone.`,
+      `Are you sure you want to delete ${formData.first_name} ${formData.last_name}? This action cannot be undone.`,
       [
         {
           text: "Cancel",
@@ -112,9 +125,14 @@ const EditEmployeeScreen = ({ navigation }) => {
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => {
-            Alert.alert("Deleted", "Employee has been deleted");
-            navigation?.goBack();
+          onPress: async () => {
+            try {
+              await api.delete(`/api/employees/${employeeID}`);
+              Alert.alert("Deleted", "Employee has been deleted");
+              navigation?.goBack();
+            } catch (error) {
+              Alert.alert("Error", "Failed to delete employee.");
+            }
           },
         },
       ],
@@ -212,7 +230,7 @@ const EditEmployeeScreen = ({ navigation }) => {
           options.multiline && styles.textArea,
           options.disabled && styles.inputDisabled,
         ]}
-        value={formData[field]}
+        value={formData[field] || ""}
         onChangeText={(text) => updateField(field, text)}
         placeholder={options.placeholder || `Enter ${label.toLowerCase()}`}
         keyboardType={options.keyboardType || "default"}
@@ -263,11 +281,11 @@ const EditEmployeeScreen = ({ navigation }) => {
       <Text style={styles.stepSubtitle}>Basic employee details</Text>
 
       <View style={styles.row}>
-        {renderInput("First Name", "firstName", {
+        {renderInput("First Name", "first_name", {
           required: true,
           halfWidth: true,
         })}
-        {renderInput("Last Name", "lastName", {
+        {renderInput("Last Name", "last_name", {
           required: true,
           halfWidth: true,
         })}
@@ -286,7 +304,7 @@ const EditEmployeeScreen = ({ navigation }) => {
         placeholder: "+1 (555) 000-0000",
       })}
 
-      {renderInput("Date of Birth", "dateOfBirth", {
+      {renderInput("Date of Birth", "date_of_birth", {
         placeholder: "YYYY-MM-DD",
         keyboardType: "numeric",
       })}
@@ -302,7 +320,7 @@ const EditEmployeeScreen = ({ navigation }) => {
         {renderInput("State", "state", { halfWidth: true, placeholder: "CA" })}
       </View>
 
-      {renderInput("Zip Code", "zipCode", {
+      {renderInput("Zip Code", "zip_code", {
         keyboardType: "numeric",
         placeholder: "12345",
       })}
@@ -314,7 +332,7 @@ const EditEmployeeScreen = ({ navigation }) => {
       <Text style={styles.stepTitle}>Employment Details</Text>
       <Text style={styles.stepSubtitle}>Job and department information</Text>
 
-      {renderInput("Employee ID", "employeeId", {
+      {renderInput("Employee ID", "employee_id", {
         placeholder: "Auto-generated or custom",
         autoCapitalize: "characters",
         disabled: true,
@@ -330,26 +348,26 @@ const EditEmployeeScreen = ({ navigation }) => {
         placeholder: "Technology",
       })}
 
-      {renderInput("Hire Date", "hireDate", {
+      {renderInput("Hire Date", "hire_date", {
         required: true,
         placeholder: "YYYY-MM-DD",
         keyboardType: "numeric",
       })}
 
-      {renderPicker("Employment Type", "employmentType", [
+      {renderPicker("Employment Type", "employment_type", [
         "Full-time",
         "Part-time",
         "Contract",
         "Intern",
       ])}
 
-      {renderPicker("Work Location", "workLocation", [
+      {renderPicker("Work Location", "work_location", [
         "Office",
         "Remote",
         "Hybrid",
       ])}
 
-      {renderInput("Reports To (Manager ID)", "managerId", {
+      {renderInput("Reports To (Manager ID)", "manager", {
         keyboardType: "numeric",
         placeholder: "Optional - Enter manager ID",
       })}
@@ -366,7 +384,7 @@ const EditEmployeeScreen = ({ navigation }) => {
         placeholder: "75000",
       })}
 
-      {renderPicker("Pay Frequency", "payFrequency", [
+      {renderPicker("Pay Frequency", "pay_frequency", [
         "Weekly",
         "Bi-weekly",
         "Monthly",
@@ -387,11 +405,11 @@ const EditEmployeeScreen = ({ navigation }) => {
       <Text style={styles.stepTitle}>Additional Information</Text>
       <Text style={styles.stepSubtitle}>Emergency contacts and notes</Text>
 
-      {renderInput("Emergency Contact Name", "emergencyContact", {
+      {renderInput("Emergency Contact Name", "emergency_contact", {
         placeholder: "Jane Doe",
       })}
 
-      {renderInput("Emergency Contact Phone", "emergencyPhone", {
+      {renderInput("Emergency Contact Phone", "emergency_phone", {
         keyboardType: "phone-pad",
         placeholder: "+1 (555) 000-0000",
       })}

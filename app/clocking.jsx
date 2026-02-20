@@ -1,16 +1,24 @@
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import { router } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
+import { CameraView, useCameraPermissions } from "expo-camera";
+import { router } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import api from "../src/services/api";
 const Clocking = () => {
   const [time, setTime] = useState(new Date());
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef(null);
-  const [clocked,setClock] = useState();
-
+  const [clocked, setClock] = useState();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -20,8 +28,11 @@ const Clocking = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const [clock, meridiem] = timeString.split(' ');
+  const timeString = time.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const [clock, meridiem] = timeString.split(" ");
 
   const handleClockIn = async () => {
     // Request camera permission
@@ -33,9 +44,9 @@ const Clocking = () => {
       const result = await requestPermission();
       if (!result.granted) {
         Alert.alert(
-          'Camera Permission Required',
-          'Please allow camera access to clock in with face verification.',
-          [{ text: 'OK' }]
+          "Camera Permission Required",
+          "Please allow camera access to clock in with face verification.",
+          [{ text: "OK" }],
         );
         return;
       }
@@ -53,25 +64,35 @@ const Clocking = () => {
           base64: true,
         });
 
-        console.log('Photo taken:', photo.uri);
-        
+        console.log("Photo taken:", photo.uri);
+
         // Close camera
         setShowCamera(false);
 
         // TODO: Send photo to your backend for face verification
         // await verifyFaceWithBackend(photo.base64);
+        try {
+          const res = await api.post("/api/face_registeration", {
+            image: photo.uri,
+          });
 
-        // For now, simulate success
-        setIsClockedIn(true);
-        Alert.alert(
-          '✅ Success!',
-          `Face verified! Clocked in at ${timeString}`,
-          [{ text: 'OK' }]
-        );
-
+          if (res.status === 200) {
+            setIsClockedIn(true);
+            console.log(res.data.message);
+            Alert.alert(
+              "✅ Success!",
+              `Face verified! Clocked in at ${timeString}`,
+              [{ text: "OK" }],
+            );
+          }
+        } catch (error) {
+          console.log("ERROR DATA:", error.response?.data);
+          console.log("ERROR STATUS:", error.response?.status);
+          console.log("ERROR MESSAGE:", error.message);
+        }
       } catch (error) {
-        console.error('Error taking picture:', error);
-        Alert.alert('Error', 'Failed to take picture. Please try again.');
+        console.error("Error taking picture:", error);
+        Alert.alert("Error", "Failed to take picture. Please try again.");
       }
     }
   };
@@ -81,24 +102,29 @@ const Clocking = () => {
   };
 
   const menuItems = [
-    { id: 1, icon: '📋', label: 'Claims', color: '#E3F2FD' },
-    { id: 2, icon: '✈️', label: 'Leave', color: '#E8F5E9' },
-    { id: 3, icon: '📅', label: 'Events', color: '#FFF3E0' },
-    { id: 4, icon: '📊', label: 'Reports', color: '#F3E5F5' },
+    { id: 1, icon: "📋", label: "Claims", color: "#E3F2FD" },
+    { id: 2, icon: "✈️", label: "Leave", color: "#E8F5E9" },
+    { id: 3, icon: "📅", label: "Events", color: "#FFF3E0" },
+    { id: 4, icon: "📊", label: "Reports", color: "#F3E5F5" },
   ];
 
   return (
     <>
-      <ScrollView style={styles.screenContainer} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={styles.screenContainer}
+        contentContainerStyle={styles.contentContainer}
+      >
         {/* Header Section */}
         <View style={styles.headerContainer}>
           <View style={styles.textContainer}>
             <Text style={styles.greeting}>Good morning, 👋</Text>
             <Text style={styles.name}>Rachael.</Text>
-            <Text style={styles.subtitle}>Begin another great day by clocking in.</Text>
+            <Text style={styles.subtitle}>
+              Begin another great day by clocking in.
+            </Text>
           </View>
-          <Image 
-            source={require('../assets/profile/person.avif')}
+          <Image
+            source={require("../assets/profile/person.avif")}
             style={styles.profile}
           />
         </View>
@@ -106,11 +132,13 @@ const Clocking = () => {
         {/* Clock Card */}
         <View style={styles.clockCard}>
           <Text style={styles.date}>
-            {new Date().toLocaleDateString('en-US', { 
-              weekday: 'short', 
-              day: 'numeric',
-              month: 'short'
-            }).toUpperCase()}
+            {new Date()
+              .toLocaleDateString("en-US", {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+              })
+              .toUpperCase()}
           </Text>
 
           <View style={styles.timeContainer}>
@@ -118,8 +146,10 @@ const Clocking = () => {
             <Text style={styles.meridiem}>{meridiem}</Text>
           </View>
 
-          <Text style={[styles.onTimeText, isClockedIn && styles.clockedInText]}>
-            {isClockedIn ? `✅ Clocked In @${timeString}` : 'On time'}
+          <Text
+            style={[styles.onTimeText, isClockedIn && styles.clockedInText]}
+          >
+            {isClockedIn ? `✅ Clocked In @${timeString}` : "On time"}
           </Text>
 
           {/* Timeline */}
@@ -145,22 +175,25 @@ const Clocking = () => {
           <View style={styles.workingHoursContainer}>
             <Text style={styles.workingHoursTitle}>WORKING HOURS</Text>
             <Text style={styles.workingHoursText}>
-              Starts <Text style={styles.boldText}>9:00AM-10:00AM</Text> & Ends <Text style={styles.boldText}>6:00PM-7:00PM</Text>
+              Starts <Text style={styles.boldText}>9:00AM-10:00AM</Text> & Ends{" "}
+              <Text style={styles.boldText}>6:00PM-7:00PM</Text>
             </Text>
           </View>
 
           {/* Clock In Button */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
               styles.clockInButton,
-              isClockedIn && styles.clockedInButton
-            ]} 
-            activeOpacity={0.8} 
+              isClockedIn && styles.clockedInButton,
+            ]}
+            activeOpacity={0.8}
             onPress={handleClockIn}
             disabled={isClockedIn}
           >
             <Text style={styles.clockInText}>
-              {isClockedIn ? '✅ Clocked In' : '📸 Clock in with Face Verification'}
+              {isClockedIn
+                ? "✅ Clocked In"
+                : "📸 Clock in with Face Verification"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -168,12 +201,13 @@ const Clocking = () => {
         {/* Grid Pills Section */}
         <View style={styles.gridContainer}>
           {menuItems.map((item) => (
-            
-            <TouchableOpacity 
-              key={item.id} 
+            <TouchableOpacity
+              key={item.id}
               style={[styles.gridItem, { backgroundColor: item.color }]}
               activeOpacity={0.7}
-              onPress={()=>{router.push(`/${item.label.toLowerCase()}`)}}
+              onPress={() => {
+                router.push(`/${item.label.toLowerCase()}`);
+              }}
             >
               <View style={styles.iconContainer}>
                 <Text style={styles.icon}>{item.icon}</Text>
@@ -185,21 +219,17 @@ const Clocking = () => {
       </ScrollView>
 
       {/* Camera Modal */}
-      <Modal
-        visible={showCamera}
-        animationType="slide"
-        transparent={false}
-      >
+      <Modal visible={showCamera} animationType="slide" transparent={false}>
         <View style={styles.cameraContainer}>
-          <CameraView 
-            ref={cameraRef}
-            style={styles.camera}
-            facing="front"
-          >
+          <CameraView ref={cameraRef} style={styles.camera} facing="front">
             <View style={styles.cameraOverlay}>
               <View style={styles.cameraHeader}>
-                <Text style={styles.cameraTitle}>Position your face in the frame</Text>
-                <Text style={styles.cameraSubtitle}>Make sure your face is clearly visible</Text>
+                <Text style={styles.cameraTitle}>
+                  Position your face in the frame
+                </Text>
+                <Text style={styles.cameraSubtitle}>
+                  Make sure your face is clearly visible
+                </Text>
               </View>
 
               {/* Face outline guide */}
@@ -208,14 +238,14 @@ const Clocking = () => {
               </View>
 
               <View style={styles.cameraButtons}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.cancelButton}
                   onPress={cancelCamera}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.captureButton}
                   onPress={takePicture}
                 >
@@ -229,24 +259,24 @@ const Clocking = () => {
         </View>
       </Modal>
     </>
-  )
-}
+  );
+};
 
-export default Clocking
+export default Clocking;
 
 const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
-    backgroundColor: '#E8E9EB',
+    backgroundColor: "#E8E9EB",
   },
   contentContainer: {
     paddingTop: 50,
     paddingBottom: 100,
   },
   headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 30,
@@ -257,20 +287,20 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 28,
-    color: '#1a1a1a',
+    color: "#1a1a1a",
     marginBottom: 0,
-    fontWeight: '400',
+    fontWeight: "400",
   },
   name: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: 36,
-    color: '#1a1a1a',
+    color: "#1a1a1a",
     marginBottom: 8,
     marginTop: -4,
   },
   subtitle: {
     fontSize: 15,
-    color: '#1a1a1a',
+    color: "#1a1a1a",
     lineHeight: 22,
   },
   profile: {
@@ -280,7 +310,7 @@ const styles = StyleSheet.create({
   },
   clockCard: {
     marginHorizontal: 20,
-    backgroundColor: '#F5F5F7',
+    backgroundColor: "#F5F5F7",
     borderRadius: 24,
     padding: 28,
     paddingTop: 32,
@@ -288,104 +318,104 @@ const styles = StyleSheet.create({
   },
   date: {
     fontSize: 13,
-    color: '#6B6B6B',
-    fontWeight: '600',
+    color: "#6B6B6B",
+    fontWeight: "600",
     letterSpacing: 0.5,
     marginBottom: 12,
   },
   timeContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     marginBottom: 12,
   },
   timeText: {
     fontSize: 72,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
+    fontWeight: "bold",
+    color: "#1a1a1a",
     letterSpacing: -3,
     lineHeight: 72,
   },
   meridiem: {
     fontSize: 36,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontWeight: "600",
+    color: "#1a1a1a",
     marginLeft: 4,
     marginBottom: 8,
   },
   onTimeText: {
     fontSize: 16,
-    color: '#00C896',
-    fontWeight: '600',
+    color: "#00C896",
+    fontWeight: "600",
     marginBottom: 24,
   },
   clockedInText: {
-    color: '#4CAF50',
+    color: "#4CAF50",
   },
   timelineContainer: {
     marginBottom: 28,
   },
   timeline: {
     height: 8,
-    backgroundColor: '#D9E3F0',
+    backgroundColor: "#D9E3F0",
     borderRadius: 4,
     marginBottom: 8,
-    position: 'relative',
+    position: "relative",
   },
   timelineBar: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     top: 0,
     bottom: 0,
-    width: '15%',
-    backgroundColor: '#7BA6E3',
+    width: "15%",
+    backgroundColor: "#7BA6E3",
     borderRadius: 4,
   },
   currentTimeMarker: {
-    position: 'absolute',
-    left: '15%',
+    position: "absolute",
+    left: "15%",
     top: -6,
     width: 20,
     height: 20,
-    backgroundColor: '#4A4A4A',
+    backgroundColor: "#4A4A4A",
     borderRadius: 10,
     borderWidth: 3,
-    borderColor: '#F5F5F7',
+    borderColor: "#F5F5F7",
   },
   timeLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingHorizontal: 2,
   },
   timeLabel: {
     fontSize: 11,
-    color: '#999',
-    fontWeight: '500',
+    color: "#999",
+    fontWeight: "500",
   },
   workingHoursContainer: {
     marginBottom: 24,
   },
   workingHoursTitle: {
     fontSize: 12,
-    color: '#6B6B6B',
-    fontWeight: '600',
+    color: "#6B6B6B",
+    fontWeight: "600",
     letterSpacing: 0.5,
     marginBottom: 6,
   },
   workingHoursText: {
     fontSize: 14,
-    color: '#6B6B6B',
+    color: "#6B6B6B",
     lineHeight: 20,
   },
   boldText: {
-    fontWeight: '700',
-    color: '#1a1a1a',
+    fontWeight: "700",
+    color: "#1a1a1a",
   },
   clockInButton: {
-    backgroundColor: '#00D9A5',
+    backgroundColor: "#00D9A5",
     paddingVertical: 18,
     borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#00D9A5',
+    alignItems: "center",
+    shadowColor: "#00D9A5",
     shadowOffset: {
       width: 0,
       height: 4,
@@ -395,29 +425,29 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   clockedInButton: {
-    backgroundColor: '#6B7280',
+    backgroundColor: "#6B7280",
     opacity: 0.7,
   },
   clockInText: {
     fontSize: 17,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: "600",
+    color: "#fff",
     letterSpacing: 0.3,
   },
   gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     paddingHorizontal: 20,
     gap: 16,
   },
   gridItem: {
-    width: '47%',
+    width: "47%",
     aspectRatio: 1,
     borderRadius: 20,
     padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -434,89 +464,89 @@ const styles = StyleSheet.create({
   },
   gridLabel: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    textAlign: 'center',
+    fontWeight: "600",
+    color: "#1a1a1a",
+    textAlign: "center",
   },
   // Camera Styles
   cameraContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: "#000",
   },
   camera: {
     flex: 1,
   },
   cameraOverlay: {
     flex: 1,
-    backgroundColor: 'transparent',
-    justifyContent: 'space-between',
+    backgroundColor: "transparent",
+    justifyContent: "space-between",
   },
   cameraHeader: {
     paddingTop: 60,
     paddingHorizontal: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cameraTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   cameraSubtitle: {
     fontSize: 14,
-    color: '#fff',
+    color: "#fff",
     opacity: 0.8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   faceGuide: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   faceOutline: {
     width: 250,
     height: 320,
     borderRadius: 125,
     borderWidth: 3,
-    borderColor: '#00D9A5',
-    borderStyle: 'dashed',
+    borderColor: "#00D9A5",
+    borderStyle: "dashed",
   },
   cameraButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 30,
     paddingBottom: 50,
   },
   cancelButton: {
     width: 80,
     height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   cancelButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   captureButton: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 4,
-    borderColor: '#00D9A5',
+    borderColor: "#00D9A5",
   },
   captureButtonInner: {
     width: 65,
     height: 65,
     borderRadius: 32.5,
-    backgroundColor: '#00D9A5',
+    backgroundColor: "#00D9A5",
   },
   placeholderButton: {
     width: 80,
   },
-})
+});

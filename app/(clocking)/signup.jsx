@@ -1,69 +1,80 @@
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { router } from "expo-router";
 import api from "../../src/services/api";
 
-export default function LoginScreen() {
+export default function SignUpScreen() {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
+  const handleSignUp = async () => {
+    // Validation
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
 
-    setIsLoading(true);
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match");
+      return;
+    }
+
+    if (password.length < 8) {
+      Alert.alert("Error", "Password must be at least 8 characters long");
+      return;
+    }
+
+    if (!agreeToTerms) {
+      Alert.alert("Error", "Please agree to the Terms and Conditions");
+      return;
+    }
+
     try {
-      const res = await api.post("/api/login", { email, password });
+      const res = await api.post("/api/register", {
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        password,
+        confirm_password: confirmPassword,
+      });
       console.log("SUCCESS:", res.data);
 
+      Alert.alert("Success", "Account created successfully!");
       localStorage.setItem("access_token", res.data.access_token);
       localStorage.setItem("refresh_token", res.data.refresh_token);
-      if (res.status === 200) {
-        router.push("./dashboard");
-      }
+
+      // Navigate to login or home screen
     } catch (error) {
-      console.log("ERROR DATA:", error.response?.data);
-      console.log("ERROR STATUS:", error.response?.status);
-      console.log("ERROR MESSAGE:", error.message);
-      Alert.alert("Error", "Login failed!");
-    } finally {
-      setIsLoading(false);
+      console.log("ERROR:", error);
+      Alert.alert("Error", "Sign up failed!");
     }
   };
 
-  const handleGoogleSignIn = () => {
-    Alert.alert("Google Sign In", "Redirecting to Google authentication...");
+  const handleGoogleSignUp = () => {
+    Alert.alert("Google Sign Up", "Redirecting to Google authentication...");
   };
 
-  const handleForgotPassword = () => {
-    Alert.alert(
-      "Forgot Password",
-      "Password reset link will be sent to your email",
-    );
-  };
-
-  const handleSignUp = () => {
-    Alert.alert("Sign Up", "Navigating to registration screen...");
+  const handleLogin = () => {
+    Alert.alert("Login", "Navigating to login screen...");
   };
 
   return (
@@ -90,14 +101,59 @@ export default function LoginScreen() {
 
           {/* Welcome Text */}
           <View style={styles.welcomeSection}>
-            <Text style={styles.welcomeTitle}>Welcome Back</Text>
+            <Text style={styles.welcomeTitle}>Create Account</Text>
             <Text style={styles.welcomeSubtitle}>
-              Sign in to continue to your account
+              Sign up to get started with HR360
             </Text>
           </View>
 
-          {/* Login Form */}
+          {/* SignUp Form */}
           <View style={styles.formSection}>
+            {/* Name Row */}
+            <View style={styles.nameRow}>
+              {/* First Name Input */}
+              <View style={[styles.inputGroup, styles.halfWidth]}>
+                <Text style={styles.inputLabel}>First Name</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons
+                    name="person-outline"
+                    size={20}
+                    color="#64748B"
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="John"
+                    placeholderTextColor="#94A3B8"
+                    value={firstName}
+                    onChangeText={setFirstName}
+                    autoCapitalize="words"
+                  />
+                </View>
+              </View>
+
+              {/* Last Name Input */}
+              <View style={[styles.inputGroup, styles.halfWidth]}>
+                <Text style={styles.inputLabel}>Last Name</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons
+                    name="person-outline"
+                    size={20}
+                    color="#64748B"
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Doe"
+                    placeholderTextColor="#94A3B8"
+                    value={lastName}
+                    onChangeText={setLastName}
+                    autoCapitalize="words"
+                  />
+                </View>
+              </View>
+            </View>
+
             {/* Email Input */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Email Address</Text>
@@ -117,7 +173,6 @@ export default function LoginScreen() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
-                  editable={!isLoading}
                 />
               </View>
             </View>
@@ -134,19 +189,16 @@ export default function LoginScreen() {
                 />
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your password"
+                  placeholder="Create a password"
                   placeholderTextColor="#94A3B8"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
-                  autoComplete="password"
-                  editable={!isLoading}
                 />
                 <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}
                   style={styles.eyeIcon}
-                  disabled={isLoading}
                 >
                   <Ionicons
                     name={showPassword ? "eye-outline" : "eye-off-outline"}
@@ -155,112 +207,107 @@ export default function LoginScreen() {
                   />
                 </TouchableOpacity>
               </View>
+              <Text style={styles.passwordHint}>
+                Must be at least 8 characters
+              </Text>
             </View>
 
-            {/* Remember Me & Forgot Password */}
-            <View style={styles.optionsRow}>
-              <TouchableOpacity
-                style={styles.rememberMe}
-                onPress={() => setRememberMe(!rememberMe)}
-                disabled={isLoading}
-              >
-                <View
-                  style={[styles.checkbox, rememberMe && styles.checkboxActive]}
+            {/* Confirm Password Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Confirm Password</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color="#64748B"
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirm your password"
+                  placeholderTextColor="#94A3B8"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={styles.eyeIcon}
                 >
-                  {rememberMe && (
-                    <Ionicons name="checkmark" size={14} color="#FFFFFF" />
-                  )}
-                </View>
-                <Text style={styles.rememberMeText}>Remember me</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={handleForgotPassword}
-                disabled={isLoading}
-              >
-                <Text style={styles.forgotPassword}>Forgot Password?</Text>
-              </TouchableOpacity>
+                  <Ionicons
+                    name={
+                      showConfirmPassword ? "eye-outline" : "eye-off-outline"
+                    }
+                    size={20}
+                    color="#64748B"
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
 
-            {/* Login Button */}
+            {/* Terms and Conditions */}
             <TouchableOpacity
-              style={[
-                styles.loginButton,
-                isLoading && styles.loginButtonDisabled,
-              ]}
-              onPress={handleLogin}
-              disabled={isLoading}
+              style={styles.termsRow}
+              onPress={() => setAgreeToTerms(!agreeToTerms)}
             >
-              {isLoading ? (
-                <>
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                  <Text style={styles.loginButtonText}>Signing In...</Text>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.loginButtonText}>Sign In</Text>
-                  <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
-                </>
-              )}
+              <View
+                style={[styles.checkbox, agreeToTerms && styles.checkboxActive]}
+              >
+                {agreeToTerms && (
+                  <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                )}
+              </View>
+              <Text style={styles.termsText}>
+                I agree to the{" "}
+                <Text style={styles.termsLink}>Terms & Conditions</Text> and{" "}
+                <Text style={styles.termsLink}>Privacy Policy</Text>
+              </Text>
+            </TouchableOpacity>
+
+            {/* Sign Up Button */}
+            <TouchableOpacity
+              style={styles.signUpButton}
+              onPress={handleSignUp}
+            >
+              <Text style={styles.signUpButtonText}>Create Account</Text>
+              <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
             </TouchableOpacity>
 
             {/* Divider */}
             <View style={styles.dividerContainer}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
+              <Text style={styles.dividerText}>OR SIGN UP WITH</Text>
               <View style={styles.dividerLine} />
             </View>
 
-            {/* Google Sign In */}
+            {/* Google Sign Up */}
             <TouchableOpacity
               style={styles.googleButton}
-              onPress={handleGoogleSignIn}
-              disabled={isLoading}
+              onPress={handleGoogleSignUp}
             >
               <FontAwesome name="google" size={20} color="#DB4437" />
-              <Text style={styles.googleButtonText}>Sign in with Google</Text>
+              <Text style={styles.googleButtonText}>Sign up with Google</Text>
             </TouchableOpacity>
 
-            {/* Social Login Options */}
+            {/* Social Sign Up Options */}
             <View style={styles.socialContainer}>
-              <TouchableOpacity
-                style={styles.socialButton}
-                disabled={isLoading}
-              >
+              <TouchableOpacity style={styles.socialButton}>
                 <Ionicons name="logo-apple" size={24} color="#1E293B" />
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.socialButton}
-                disabled={isLoading}
-              >
+              <TouchableOpacity style={styles.socialButton}>
                 <Ionicons name="logo-linkedin" size={24} color="#0A66C2" />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Sign Up Link */}
-          <View style={styles.signUpSection}>
-            <Text style={styles.signUpText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={handleSignUp} disabled={isLoading}>
-              <Text style={styles.signUpLink}>Sign Up</Text>
+          {/* Login Link */}
+          <View style={styles.loginSection}>
+            <Text style={styles.loginText}>Already have an account? </Text>
+            <TouchableOpacity onPress={handleLogin}>
+              <Text style={styles.loginLink}>Sign In</Text>
             </TouchableOpacity>
-          </View>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              By signing in, you agree to our{" "}
-            </Text>
-            <View style={styles.footerLinks}>
-              <TouchableOpacity>
-                <Text style={styles.footerLink}>Terms of Service</Text>
-              </TouchableOpacity>
-              <Text style={styles.footerText}> and </Text>
-              <TouchableOpacity>
-                <Text style={styles.footerLink}>Privacy Policy</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -323,6 +370,13 @@ const styles = StyleSheet.create({
   formSection: {
     marginBottom: 24,
   },
+  nameRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  halfWidth: {
+    flex: 1,
+  },
   inputGroup: {
     marginBottom: 20,
   },
@@ -354,15 +408,16 @@ const styles = StyleSheet.create({
   eyeIcon: {
     padding: 4,
   },
-  optionsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 24,
+  passwordHint: {
+    fontSize: 12,
+    color: "#64748B",
+    marginTop: 6,
+    marginLeft: 4,
   },
-  rememberMe: {
+  termsRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
+    marginBottom: 24,
   },
   checkbox: {
     width: 20,
@@ -371,24 +426,27 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#CBD5E1",
     marginRight: 8,
+    marginTop: 2,
     justifyContent: "center",
     alignItems: "center",
+    flexShrink: 0,
   },
   checkboxActive: {
     backgroundColor: "#3B82F6",
     borderColor: "#3B82F6",
   },
-  rememberMeText: {
+  termsText: {
     fontSize: 14,
     color: "#64748B",
     fontWeight: "500",
+    lineHeight: 20,
+    flex: 1,
   },
-  forgotPassword: {
-    fontSize: 14,
+  termsLink: {
     color: "#3B82F6",
     fontWeight: "600",
   },
-  loginButton: {
+  signUpButton: {
     backgroundColor: "#3B82F6",
     borderRadius: 12,
     height: 56,
@@ -403,10 +461,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  loginButtonDisabled: {
-    opacity: 0.7,
-  },
-  loginButtonText: {
+  signUpButtonText: {
     fontSize: 16,
     fontWeight: "700",
     color: "#FFFFFF",
@@ -460,40 +515,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  signUpSection: {
+  loginSection: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     marginTop: 24,
   },
-  signUpText: {
+  loginText: {
     fontSize: 14,
     color: "#64748B",
     fontWeight: "500",
   },
-  signUpLink: {
+  loginLink: {
     fontSize: 14,
     color: "#3B82F6",
     fontWeight: "700",
-  },
-  footer: {
-    alignItems: "center",
-    marginTop: 32,
-  },
-  footerText: {
-    fontSize: 12,
-    color: "#94A3B8",
-    textAlign: "center",
-  },
-  footerLinks: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    marginTop: 4,
-  },
-  footerLink: {
-    fontSize: 12,
-    color: "#3B82F6",
-    fontWeight: "600",
   },
 });

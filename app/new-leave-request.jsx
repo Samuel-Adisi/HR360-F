@@ -1,17 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import api from "../src/services/api";
 
 const AddLeaveRequestScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
@@ -23,6 +26,9 @@ const AddLeaveRequestScreen = ({ navigation }) => {
 
   const [errors, setErrors] = useState({});
   const [showLeaveTypePicker, setShowLeaveTypePicker] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
   const leaveTypes = [
     { id: "1", name: "Annual Leave", icon: "calendar", color: "#007AFF" },
@@ -40,9 +46,50 @@ const AddLeaveRequestScreen = ({ navigation }) => {
 
   const updateFormData = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error for this field when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatDisplayDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const handleStartDateChange = (event, selectedDate) => {
+    setShowStartDatePicker(Platform.OS === "ios");
+    if (selectedDate) {
+      const formattedDate = formatDate(selectedDate);
+      updateFormData("startDate", formattedDate);
+    }
+  };
+
+  const handleEndDateChange = (event, selectedDate) => {
+    setShowEndDatePicker(Platform.OS === "ios");
+    if (selectedDate) {
+      const formattedDate = formatDate(selectedDate);
+      updateFormData("endDate", formattedDate);
+    }
+  };
+
+  // Web-specific date change handlers
+  const handleWebDateChange = (field, value) => {
+    if (value) {
+      updateFormData(field, value);
     }
   };
 
@@ -88,29 +135,49 @@ const AddLeaveRequestScreen = ({ navigation }) => {
     return 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateForm()) {
       const days = calculateDays();
-      Alert.alert(
-        "Success",
-        `Leave request submitted successfully!\n\nType: ${formData.leaveType}\nDuration: ${days} day${days > 1 ? "s" : ""}`,
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              // Reset form
-              setFormData({
-                leaveType: "",
-                startDate: "",
-                endDate: "",
-                reason: "",
-              });
-              // Navigate back or to leave requests list
-              // navigation.goBack();
-            },
-          },
-        ],
-      );
+      setIsLoading(true);
+
+      try {
+        const res = await api.post("/api/leave-requests/", {
+          leave_type: formData.leaveType,
+          start_date: formData.startDate,
+          end_date: formData.endDate,
+          reason: formData.reason,
+        });
+
+        if (res.status === 201) {
+          Alert.alert(
+            "Success",
+            `Leave request submitted successfully!\n\nType: ${formData.leaveType}\nDuration: ${days} day${days > 1 ? "s" : ""}`,
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  setFormData({
+                    leaveType: "",
+                    startDate: "",
+                    endDate: "",
+                    reason: "",
+                  });
+                  navigation.goBack();
+                },
+              },
+            ],
+          );
+        }
+      } catch (error) {
+        console.log("Error submitting leave request:", error.message);
+        console.log("Error details:", error.response?.data || error);
+        Alert.alert(
+          "Error",
+          "There was an error submitting your leave request. Please try again later.",
+        );
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -140,11 +207,67 @@ const AddLeaveRequestScreen = ({ navigation }) => {
       >
         {type.name}
       </Text>
-      {formData.leaveType === type.name && (
+      {formData.leaveType === type.name ? (
         <Ionicons name="checkmark-circle" size={24} color={type.color} />
-      )}
+      ) : null}
     </TouchableOpacity>
   );
+
+  // Render date input based on platform
+  const renderDateInput = (field, label, error, showPicker, setShowPicker) => {
+    const isStartDate = field === "startDate";
+    const value = formData[field];
+    const minDate = isStartDate
+      ? new Date().toISOString().split("T")[0]
+      : formData.startDate || new Date().toISOString().split("T")[0];
+
+    if (Platform.OS === "web") {
+      return (
+        <View style={styles.dateField}>
+          <Text style={styles.label}>{label}</Text>
+          <View style={[styles.dateInput, error && styles.inputError]}>
+            <Ionicons name="calendar-outline" size={20} color="#666" />
+            <input
+              type="date"
+              value={value}
+              onChange={(e) => handleWebDateChange(field, e.target.value)}
+              min={minDate}
+              style={{
+                marginLeft: 10,
+                fontSize: 15,
+                color: "#222",
+                fontWeight: "500",
+                border: "none",
+                outline: "none",
+                backgroundColor: "transparent",
+                flex: 1,
+                fontFamily: "inherit",
+              }}
+            />
+          </View>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.dateField}>
+        <Text style={styles.label}>{label}</Text>
+        <TouchableOpacity
+          style={[styles.dateInput, error && styles.inputError]}
+          onPress={() => setShowPicker(true)}
+        >
+          <Ionicons name="calendar-outline" size={20} color="#666" />
+          <Text
+            style={[styles.dateInputText, !value && styles.placeholderText]}
+          >
+            {value ? formatDisplayDate(value) : "Select date"}
+          </Text>
+        </TouchableOpacity>
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -189,6 +312,7 @@ const AddLeaveRequestScreen = ({ navigation }) => {
                       }
                       size={20}
                       color="#007AFF"
+                      style={styles.selectButtonIcon}
                     />
                     <Text style={styles.selectButtonText}>
                       {formData.leaveType}
@@ -206,16 +330,16 @@ const AddLeaveRequestScreen = ({ navigation }) => {
                 color="#666"
               />
             </TouchableOpacity>
-            {errors.leaveType && (
+            {errors.leaveType ? (
               <Text style={styles.errorText}>{errors.leaveType}</Text>
-            )}
+            ) : null}
 
             {/* Leave Type Options */}
-            {showLeaveTypePicker && (
+            {showLeaveTypePicker ? (
               <View style={styles.leaveTypeOptions}>
                 {leaveTypes.map(renderLeaveTypeOption)}
               </View>
-            )}
+            ) : null}
           </View>
 
           {/* Date Range Section */}
@@ -223,63 +347,52 @@ const AddLeaveRequestScreen = ({ navigation }) => {
             <Text style={styles.sectionTitle}>Leave Period *</Text>
 
             <View style={styles.dateRow}>
-              <View style={styles.dateField}>
-                <Text style={styles.label}>Start Date</Text>
-                <TouchableOpacity
-                  style={[
-                    styles.dateInput,
-                    errors.startDate && styles.inputError,
-                  ]}
-                  onPress={() => {
-                    // In a real app, open date picker here
-                    updateFormData("startDate", "2024-08-01");
-                  }}
-                >
-                  <Ionicons name="calendar-outline" size={20} color="#666" />
-                  <Text
-                    style={[
-                      styles.dateInputText,
-                      !formData.startDate && styles.placeholderText,
-                    ]}
-                  >
-                    {formData.startDate || "Select date"}
-                  </Text>
-                </TouchableOpacity>
-                {errors.startDate && (
-                  <Text style={styles.errorText}>{errors.startDate}</Text>
-                )}
-              </View>
+              {renderDateInput(
+                "startDate",
+                "Start Date",
+                errors.startDate,
+                showStartDatePicker,
+                setShowStartDatePicker,
+              )}
 
-              <View style={styles.dateField}>
-                <Text style={styles.label}>End Date</Text>
-                <TouchableOpacity
-                  style={[
-                    styles.dateInput,
-                    errors.endDate && styles.inputError,
-                  ]}
-                  onPress={() => {
-                    // In a real app, open date picker here
-                    updateFormData("endDate", "2024-08-05");
-                  }}
-                >
-                  <Ionicons name="calendar-outline" size={20} color="#666" />
-                  <Text
-                    style={[
-                      styles.dateInputText,
-                      !formData.endDate && styles.placeholderText,
-                    ]}
-                  >
-                    {formData.endDate || "Select date"}
-                  </Text>
-                </TouchableOpacity>
-                {errors.endDate && (
-                  <Text style={styles.errorText}>{errors.endDate}</Text>
-                )}
-              </View>
+              {renderDateInput(
+                "endDate",
+                "End Date",
+                errors.endDate,
+                showEndDatePicker,
+                setShowEndDatePicker,
+              )}
             </View>
 
+            {/* Date Pickers for Mobile */}
+            {Platform.OS !== "web" && showStartDatePicker ? (
+              <DateTimePicker
+                value={
+                  formData.startDate ? new Date(formData.startDate) : new Date()
+                }
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                onChange={handleStartDateChange}
+                minimumDate={new Date()}
+              />
+            ) : null}
+
+            {Platform.OS !== "web" && showEndDatePicker ? (
+              <DateTimePicker
+                value={
+                  formData.endDate ? new Date(formData.endDate) : new Date()
+                }
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                onChange={handleEndDateChange}
+                minimumDate={
+                  formData.startDate ? new Date(formData.startDate) : new Date()
+                }
+              />
+            ) : null}
+
             {/* Duration Display */}
-            {formData.startDate && formData.endDate && calculateDays() > 0 && (
+            {formData.startDate && formData.endDate && calculateDays() > 0 ? (
               <View style={styles.durationCard}>
                 <Ionicons name="time-outline" size={20} color="#007AFF" />
                 <Text style={styles.durationText}>
@@ -287,7 +400,7 @@ const AddLeaveRequestScreen = ({ navigation }) => {
                   {calculateDays() > 1 ? "s" : ""}
                 </Text>
               </View>
-            )}
+            ) : null}
           </View>
 
           {/* Reason Section */}
@@ -304,9 +417,9 @@ const AddLeaveRequestScreen = ({ navigation }) => {
               maxLength={500}
             />
             <View style={styles.textAreaFooter}>
-              {errors.reason && (
+              {errors.reason ? (
                 <Text style={styles.errorText}>{errors.reason}</Text>
-              )}
+              ) : null}
               <Text style={styles.characterCount}>
                 {formData.reason.length}/500
               </Text>
@@ -315,7 +428,12 @@ const AddLeaveRequestScreen = ({ navigation }) => {
 
           {/* Info Card */}
           <View style={styles.infoCard}>
-            <Ionicons name="information-circle" size={20} color="#007AFF" />
+            <Ionicons
+              name="information-circle"
+              size={20}
+              color="#007AFF"
+              style={styles.infoIcon}
+            />
             <Text style={styles.infoText}>
               Your leave request will be sent to your manager for approval.
               You'll receive a notification once it's reviewed.
@@ -328,12 +446,34 @@ const AddLeaveRequestScreen = ({ navigation }) => {
           <TouchableOpacity
             style={styles.cancelButton}
             onPress={() => navigation?.goBack()}
+            disabled={isLoading}
           >
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Ionicons name="checkmark-circle" size={20} color="#fff" />
-            <Text style={styles.submitButtonText}>Submit Request</Text>
+          <TouchableOpacity
+            style={[
+              styles.submitButton,
+              isLoading && styles.submitButtonDisabled,
+            ]}
+            onPress={handleSubmit}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <ActivityIndicator size="small" color="#fff" />
+                <Text style={styles.submitButtonText}>Submitting...</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={20}
+                  color="#fff"
+                  style={styles.submitButtonIcon}
+                />
+                <Text style={styles.submitButtonText}>Submit Request</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -400,7 +540,9 @@ const styles = StyleSheet.create({
   selectButtonContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+  },
+  selectButtonIcon: {
+    marginRight: 10,
   },
   selectButtonText: {
     fontSize: 15,
@@ -423,7 +565,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 14,
-    gap: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
@@ -436,6 +577,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 12,
   },
   leaveTypeOptionText: {
     flex: 1,
@@ -449,10 +591,10 @@ const styles = StyleSheet.create({
   },
   dateRow: {
     flexDirection: "row",
-    gap: 12,
   },
   dateField: {
     flex: 1,
+    marginRight: 12,
   },
   label: {
     fontSize: 14,
@@ -466,7 +608,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 14,
-    gap: 10,
     borderWidth: 1,
     borderColor: "#e0e0e0",
   },
@@ -474,6 +615,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#222",
     fontWeight: "500",
+    marginLeft: 10,
   },
   placeholderText: {
     color: "#999",
@@ -482,7 +624,6 @@ const styles = StyleSheet.create({
   durationCard: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
     backgroundColor: "#f0f9ff",
     padding: 12,
     borderRadius: 10,
@@ -492,6 +633,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#007AFF",
     fontWeight: "600",
+    marginLeft: 8,
   },
   textArea: {
     backgroundColor: "#fff",
@@ -525,11 +667,13 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     flexDirection: "row",
-    gap: 10,
     backgroundColor: "#f0f9ff",
     padding: 14,
     borderRadius: 12,
     marginBottom: 80,
+  },
+  infoIcon: {
+    marginRight: 10,
   },
   infoText: {
     flex: 1,
@@ -539,7 +683,6 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: "row",
-    gap: 12,
     padding: 16,
     backgroundColor: "#fff",
     borderTopWidth: 1,
@@ -552,6 +695,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#f5f5f5",
+    marginRight: 12,
   },
   cancelButtonText: {
     fontSize: 16,
@@ -561,12 +705,17 @@ const styles = StyleSheet.create({
   submitButton: {
     flex: 2,
     flexDirection: "row",
-    gap: 8,
     padding: 14,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#007AFF",
+  },
+  submitButtonDisabled: {
+    opacity: 0.7,
+  },
+  submitButtonIcon: {
+    marginRight: 8,
   },
   submitButtonText: {
     fontSize: 16,
