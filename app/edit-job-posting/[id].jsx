@@ -1,25 +1,26 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import React, { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import api from "../src/services/api";
+import api from "../../src/services/api";
 
 const { width } = Dimensions.get("window");
 
-export default function AddJobPostingScreen() {
+export default function EditJobPostingScreen() {
+  const { id } = useLocalSearchParams();
   const [formData, setFormData] = useState({
     job_title: "",
     department: "",
@@ -39,7 +40,8 @@ export default function AddJobPostingScreen() {
   });
 
   const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [showPicker, setShowPicker] = useState({
     department: false,
     location: false,
@@ -91,6 +93,44 @@ export default function AddJobPostingScreen() {
     "Executive",
   ];
 
+  useEffect(() => {
+    fetchJobPosting();
+  }, [id]);
+
+  const fetchJobPosting = async () => {
+    try {
+      setIsLoading(true);
+      const res = await api.get(`/api/jobs-posting/${id}/`);
+
+      if (res.status === 200) {
+        const data = res.data;
+        setFormData({
+          job_title: data.job_title || "",
+          department: data.department || "",
+          location: data.location || "",
+          job_type: data.job_type || "",
+          experience_level: data.experience_level || "",
+          salary_min: data.salary_min ? data.salary_min.toString() : "",
+          salary_max: data.salary_max ? data.salary_max.toString() : "",
+          positions: data.positions ? data.positions.toString() : "1",
+          deadline: data.deadline || "",
+          job_description: data.job_description || "",
+          responsibilities: data.responsibilities || "",
+          requirements: data.requirements || "",
+          benefits: data.benefits || "",
+          contact_email: data.contact_email || "",
+          contact_phone: data.contact_phone || "",
+        });
+      }
+    } catch (error) {
+      console.log("ERROR:", error.response?.data);
+      Alert.alert("Error", "Failed to load job posting. Please try again.");
+      router.back();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -122,13 +162,27 @@ export default function AddJobPostingScreen() {
     }
 
     if (formData.salary_min && formData.salary_max) {
-      if (parseInt(formData.salary_min) >= parseInt(formData.salary_max)) {
+      if (parseFloat(formData.salary_min) >= parseFloat(formData.salary_max)) {
         newErrors.salary_max = "Max salary must be greater than min salary";
       }
     }
 
     if (!formData.deadline) {
       newErrors.deadline = "Application deadline is required";
+    } else {
+      // Validate date format (YYYY-MM-DD)
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(formData.deadline)) {
+        newErrors.deadline = "Invalid date format. Use YYYY-MM-DD";
+      } else {
+        // Check if date is in the past
+        const selectedDate = new Date(formData.deadline);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (selectedDate < today) {
+          newErrors.deadline = "Deadline cannot be in the past";
+        }
+      }
     }
 
     if (!formData.job_description.trim()) {
@@ -154,27 +208,6 @@ export default function AddJobPostingScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleClose = () => {
-    setFormData({
-      job_title: "",
-      department: "",
-      location: "",
-      job_type: "",
-      experience_level: "",
-      salary_min: "",
-      salary_max: "",
-      positions: "1",
-      deadline: "",
-      job_description: "",
-      responsibilities: "",
-      requirements: "",
-      benefits: "",
-      contact_email: "",
-      contact_phone: "",
-    });
-    setErrors({});
-  };
-
   const handleSubmit = async () => {
     if (!validateForm()) {
       Alert.alert(
@@ -184,21 +217,42 @@ export default function AddJobPostingScreen() {
       return;
     }
 
-    setIsLoading(true);
+    setIsSaving(true);
 
     try {
-      const res = await api.post("/api/jobs-posting/", formData);
+      // Prepare data for API
+      const apiData = {
+        job_title: formData.job_title,
+        department: formData.department,
+        location: formData.location,
+        job_type: formData.job_type,
+        experience_level: formData.experience_level,
+        salary_min: formData.salary_min
+          ? parseFloat(formData.salary_min)
+          : null,
+        salary_max: formData.salary_max
+          ? parseFloat(formData.salary_max)
+          : null,
+        positions: parseInt(formData.positions) || 1,
+        deadline: formData.deadline,
+        job_description: formData.job_description,
+        responsibilities: formData.responsibilities,
+        requirements: formData.requirements,
+        benefits: formData.benefits || null,
+        contact_email: formData.contact_email || null,
+        contact_phone: formData.contact_phone || null,
+      };
 
-      if (res.status === 201) {
-        console.log("Job posting created successfully");
-        Alert.alert("Success", "Job posting created successfully!", [
+      console.log("Updating job posting:", apiData);
+
+      const res = await api.put(`/api/jobs-posting/${id}/`, apiData);
+
+      if (res.status === 200) {
+        console.log("Job posting updated successfully");
+        Alert.alert("Success", "Job posting updated successfully!", [
           {
-            text: "View Postings",
+            text: "OK",
             onPress: () => router.back(),
-          },
-          {
-            text: "Add Another",
-            onPress: () => handleClose(),
           },
         ]);
       }
@@ -207,11 +261,9 @@ export default function AddJobPostingScreen() {
       console.log("ERROR STATUS:", error.response?.status);
       console.log("ERROR MESSAGE:", error.message);
 
-      // Handle specific error cases
       if (error.response?.status === 400) {
         const errorData = error.response?.data;
         if (errorData && typeof errorData === "object") {
-          // Set field-specific errors
           const fieldErrors = {};
           Object.keys(errorData).forEach((key) => {
             if (Array.isArray(errorData[key])) {
@@ -230,15 +282,17 @@ export default function AddJobPostingScreen() {
       } else if (error.response?.status === 403) {
         Alert.alert(
           "Permission Denied",
-          "You don't have permission to create job postings.",
+          "You don't have permission to edit this job posting.",
         );
+      } else if (error.response?.status === 404) {
+        Alert.alert("Not Found", "Job posting not found.");
       } else if (error.response?.status >= 500) {
         Alert.alert("Server Error", "Server error. Please try again later.");
       } else {
-        Alert.alert("Error", "Failed to create job posting. Please try again.");
+        Alert.alert("Error", "Failed to update job posting. Please try again.");
       }
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
@@ -262,7 +316,7 @@ export default function AddJobPostingScreen() {
         multiline={options.multiline}
         numberOfLines={options.numberOfLines || 1}
         textAlignVertical={options.multiline ? "top" : "center"}
-        editable={!isLoading}
+        editable={!isSaving}
       />
       {errors[field] && <Text style={styles.errorText}>{errors[field]}</Text>}
     </View>
@@ -281,10 +335,10 @@ export default function AddJobPostingScreen() {
         <TouchableOpacity
           style={[styles.pickerButton, errors[field] && styles.inputError]}
           onPress={() =>
-            !isLoading &&
+            !isSaving &&
             setShowPicker((prev) => ({ ...prev, [field]: !prev[field] }))
           }
-          disabled={isLoading}
+          disabled={isSaving}
         >
           <Text
             style={[
@@ -337,6 +391,27 @@ export default function AddJobPostingScreen() {
     );
   };
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color="#1E293B" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Edit Job Posting</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3B82F6" />
+          <Text style={styles.loadingText}>Loading job posting...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <KeyboardAvoidingView
@@ -348,20 +423,20 @@ export default function AddJobPostingScreen() {
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.backButton}
-            disabled={isLoading}
+            disabled={isSaving}
           >
             <Ionicons name="arrow-back" size={24} color="#1E293B" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Add Job Posting</Text>
+          <Text style={styles.headerTitle}>Edit Job Posting</Text>
           <View style={styles.headerRight} />
         </View>
 
         {/* Loading Overlay */}
-        {isLoading && (
+        {isSaving && (
           <View style={styles.loadingOverlay}>
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#3B82F6" />
-              <Text style={styles.loadingText}>Creating job posting...</Text>
+              <Text style={styles.loadingText}>Updating job posting...</Text>
             </View>
           </View>
         )}
@@ -370,7 +445,7 @@ export default function AddJobPostingScreen() {
           style={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          scrollEnabled={!isLoading}
+          scrollEnabled={!isSaving}
         >
           {/* Basic Information */}
           <View style={styles.section}>
@@ -398,26 +473,34 @@ export default function AddJobPostingScreen() {
             )}
 
             <View style={styles.row}>
-              {renderInput("Min Salary ($)", "salary_min", {
-                keyboardType: "numeric",
-                placeholder: "50000",
-              })}
-              {renderInput("Max Salary ($)", "salary_max", {
-                keyboardType: "numeric",
-                placeholder: "80000",
-              })}
+              <View style={{ flex: 1 }}>
+                {renderInput("Min Salary ($)", "salary_min", {
+                  keyboardType: "numeric",
+                  placeholder: "50000",
+                })}
+              </View>
+              <View style={{ flex: 1 }}>
+                {renderInput("Max Salary ($)", "salary_max", {
+                  keyboardType: "numeric",
+                  placeholder: "80000",
+                })}
+              </View>
             </View>
 
             <View style={styles.row}>
-              {renderInput("Open Positions", "positions", {
-                required: true,
-                keyboardType: "numeric",
-                placeholder: "1",
-              })}
-              {renderInput("Application Deadline", "deadline", {
-                required: true,
-                placeholder: "YYYY-MM-DD",
-              })}
+              <View style={{ flex: 1 }}>
+                {renderInput("Open Positions", "positions", {
+                  required: true,
+                  keyboardType: "numeric",
+                  placeholder: "1",
+                })}
+              </View>
+              <View style={{ flex: 1 }}>
+                {renderInput("Application Deadline", "deadline", {
+                  required: true,
+                  placeholder: "YYYY-MM-DD",
+                })}
+              </View>
             </View>
           </View>
 
@@ -526,23 +609,23 @@ export default function AddJobPostingScreen() {
         {/* Footer Buttons */}
         <View style={styles.footer}>
           <TouchableOpacity
-            style={[styles.secondaryButton, isLoading && styles.buttonDisabled]}
+            style={[styles.secondaryButton, isSaving && styles.buttonDisabled]}
             onPress={() => router.back()}
-            disabled={isLoading}
+            disabled={isSaving}
           >
             <Text style={styles.secondaryButtonText}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.primaryButton, isLoading && styles.buttonDisabled]}
+            style={[styles.primaryButton, isSaving && styles.buttonDisabled]}
             onPress={handleSubmit}
-            disabled={isLoading}
+            disabled={isSaving}
           >
-            {isLoading ? (
+            {isSaving ? (
               <ActivityIndicator size="small" color="#FFF" />
             ) : (
               <>
                 <Ionicons name="checkmark" size={20} color="#FFF" />
-                <Text style={styles.primaryButtonText}>Publish Job</Text>
+                <Text style={styles.primaryButtonText}>Update Job</Text>
               </>
             )}
           </TouchableOpacity>

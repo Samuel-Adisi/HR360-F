@@ -4,60 +4,55 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { router } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const FaceRegistrationScreen = () => {
-  const [currentStep, setCurrentStep] = useState(1);
   const [showCamera, setShowCamera] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef(null);
 
-  const [capturedPhotos, setCapturedPhotos] = useState({
-    front: null,
-    left: null,
-    right: null,
-  });
-
-  const [currentAngle, setCurrentAngle] = useState("front");
+  const [capturedPhoto, setCapturedPhoto] = useState(null);
+  const [username, setUsername] = useState("");
 
   // Your backend URL - UPDATE THIS
   const API_URL = Platform.select({
     web: "http://localhost:8000",
-    default: "http://192.168.1.100:8000", // Change to your computer's IP
+    android: "http://10.0.2.2:8000", // Android emulator
+    ios: "http://localhost:8000", // iOS simulator
+    default: "http://192.168.1.100:8000", // Physical device - change to your IP
   });
 
-  const instructions = {
-    front: {
-      title: "Face Forward",
-      subtitle: "Look directly at the camera",
-      icon: "scan-outline",
-    },
-    left: {
-      title: "Turn Left",
-      subtitle: "Turn your head slightly to the left",
-      icon: "arrow-back-circle-outline",
-    },
-    right: {
-      title: "Turn Right",
-      subtitle: "Turn your head slightly to the right",
-      icon: "arrow-forward-circle-outline",
-    },
+  // Load username on mount
+  React.useEffect(() => {
+    loadUsername();
+  }, []);
+
+  const loadUsername = async () => {
+    try {
+      const storedUsername = await AsyncStorage.getItem("username");
+      if (storedUsername) {
+        setUsername(storedUsername);
+      }
+    } catch (error) {
+      console.error("Error loading username:", error);
+    }
   };
 
   const handleStartRegistration = async () => {
     if (!permission) {
+      Alert.alert("Error", "Camera permissions not available");
       return;
     }
 
@@ -66,14 +61,16 @@ const FaceRegistrationScreen = () => {
       if (!result.granted) {
         Alert.alert(
           "Camera Permission Required",
-          "Please allow camera access to register your face.",
+          "Please allow camera access to register your face for attendance tracking.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open Settings", onPress: () => {} },
+          ],
         );
         return;
       }
     }
 
-    setCurrentStep(2);
-    setCurrentAngle("front");
     setCameraReady(false);
     setShowCamera(true);
   };
@@ -85,7 +82,7 @@ const FaceRegistrationScreen = () => {
 
   const takePicture = async () => {
     if (!cameraReady) {
-      Alert.alert("Please Wait", "Camera is still loading...");
+      Alert.alert("Please Wait", "Camera is still initializing...");
       return;
     }
 
@@ -95,146 +92,148 @@ const FaceRegistrationScreen = () => {
     }
 
     try {
-      console.log(`Taking ${currentAngle} photo...`);
+      console.log("Taking photo...");
 
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.8,
+        quality: 0.9,
+        base64: false,
         skipProcessing: false,
+        exif: false,
       });
 
-      console.log(`✓ ${currentAngle} photo captured:`, photo.uri);
+      console.log("✓ Photo captured:", photo.uri);
 
-      setCapturedPhotos((prev) => ({
-        ...prev,
-        [currentAngle]: photo.uri,
-      }));
-
-      // Move to next angle
-      if (currentAngle === "front") {
-        setCurrentAngle("left");
-      } else if (currentAngle === "left") {
-        setCurrentAngle("right");
-      } else {
-        // All photos captured
-        setShowCamera(false);
-        setCurrentStep(3);
-      }
+      setCapturedPhoto(photo.uri);
+      setShowCamera(false);
     } catch (error) {
       console.error("Error taking picture:", error);
-      Alert.alert("Error", "Failed to take picture. Please try again.");
+      Alert.alert(
+        "Camera Error",
+        "Failed to capture photo. Please try again.",
+        [{ text: "OK" }],
+      );
     }
   };
 
-  const retakePhoto = (angle) => {
-    setCapturedPhotos((prev) => ({
-      ...prev,
-      [angle]: null,
-    }));
-    setCurrentAngle(angle);
+  const retakePhoto = () => {
+    setCapturedPhoto(null);
     setCameraReady(false);
     setShowCamera(true);
-    setCurrentStep(2);
+  };
+
+  const cancelCamera = () => {
+    setShowCamera(false);
+    setCameraReady(false);
   };
 
   const handleRegister = async () => {
+    if (!capturedPhoto) {
+      Alert.alert("Error", "Please capture a photo first");
+      return;
+    }
+
+    if (!username) {
+      Alert.alert("Error", "Username not found. Please login again.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Validate all photos exist
-      if (
-        !capturedPhotos.front ||
-        !capturedPhotos.left ||
-        !capturedPhotos.right
-      ) {
-        Alert.alert("Error", "Please capture all 3 photos");
-        setLoading(false);
-        return;
-      }
-
       console.log("Creating FormData...");
       const formData = new FormData();
 
-      const getFileName = (uri) => uri.split("/").pop() || "photo.jpg";
+      // Add username
+      formData.append("username", username);
 
-      // Helper function to convert URI to Blob for web
-      const uriToBlob = async (uri) => {
-        const response = await fetch(uri);
-        const blob = await response.blob();
-        return blob;
+      // Helper to get filename from URI
+      const getFileName = (uri) => {
+        const parts = uri.split("/");
+        return parts[parts.length - 1] || "photo.jpg";
       };
 
-      // Append images for both web and native
+      // Helper to get file extension
+      const getFileExtension = (uri) => {
+        const filename = getFileName(uri);
+        const parts = filename.split(".");
+        return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : "jpg";
+      };
+
+      // Helper to get MIME type
+      const getMimeType = (uri) => {
+        const ext = getFileExtension(uri);
+        const mimeTypes = {
+          jpg: "image/jpeg",
+          jpeg: "image/jpeg",
+          png: "image/png",
+          webp: "image/webp",
+        };
+        return mimeTypes[ext] || "image/jpeg";
+      };
+
+      // Platform-specific image handling
       if (Platform.OS === "web") {
-        console.log("Processing images for web...");
-        
-        // Convert data URIs to blobs
-        const blob1 = await uriToBlob(capturedPhotos.front);
-        const blob2 = await uriToBlob(capturedPhotos.left);
-        const blob3 = await uriToBlob(capturedPhotos.right);
+        console.log("Processing image for web...");
 
-        console.log("Blob sizes:", blob1.size, blob2.size, blob3.size);
+        const response = await fetch(capturedPhoto);
+        const blob = await response.blob();
 
-        formData.append("image1", blob1, "front.jpg");
-        formData.append("image2", blob2, "left.jpg");
-        formData.append("image3", blob3, "right.jpg");
+        console.log("Blob size:", blob.size, "Type:", blob.type);
+
+        formData.append("image", blob, "face.jpg");
       } else {
-        console.log("Processing images for native...");
-        
-        // For native, append as file objects
-        formData.append("image1", {
-          uri: capturedPhotos.front,
-          type: "image/jpeg",
-          name: getFileName(capturedPhotos.front),
-        });
+        console.log("Processing image for native...");
 
-        formData.append("image2", {
-          uri: capturedPhotos.left,
-          type: "image/jpeg",
-          name: getFileName(capturedPhotos.left),
-        });
+        const imageFile = {
+          uri: capturedPhoto,
+          type: getMimeType(capturedPhoto),
+          name: getFileName(capturedPhoto),
+        };
 
-        formData.append("image3", {
-          uri: capturedPhotos.right,
-          type: "image/jpeg",
-          name: getFileName(capturedPhotos.right),
-        });
+        console.log("Image file:", imageFile);
+
+        formData.append("image", imageFile);
       }
 
       console.log("Getting access token...");
       let token = await AsyncStorage.getItem("access_token");
 
       if (!token) {
-        Alert.alert("Error", "No access token found. Please login again.");
+        Alert.alert("Session Expired", "Please login again.");
         setLoading(false);
+        router.replace("/login");
         return;
       }
 
-      console.log("Sending request to:", `${API_URL}/api/face_registration`);
+      console.log("Sending request to:", `${API_URL}/api/face/register/`);
+      console.log("Username:", username);
 
-      // First attempt
-      let response = await fetch(`${API_URL}/api/face_registration`, {
+      // First attempt with current token
+      let response = await fetch(`${API_URL}/api/face/register/`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
+          // Don't set Content-Type - let FormData set it with boundary
         },
         body: formData,
       });
 
       console.log("Response status:", response.status);
 
-      // Handle token refresh
+      // Handle token refresh if expired
       if (response.status === 401) {
-        console.log("Token expired, refreshing...");
+        console.log("Token expired, attempting refresh...");
 
         const refreshToken = await AsyncStorage.getItem("refresh_token");
 
         if (!refreshToken) {
           setLoading(false);
           Alert.alert("Session Expired", "Please login again.");
+          router.replace("/login");
           return;
         }
 
-        const refreshResponse = await fetch(`${API_URL}/api/token/refresh`, {
+        const refreshResponse = await fetch(`${API_URL}/api/token/refresh/`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -245,9 +244,11 @@ const FaceRegistrationScreen = () => {
         });
 
         if (!refreshResponse.ok) {
+          console.log("Token refresh failed");
           await AsyncStorage.multiRemove(["access_token", "refresh_token"]);
           setLoading(false);
           Alert.alert("Session Expired", "Please login again.");
+          router.replace("/login");
           return;
         }
 
@@ -255,65 +256,145 @@ const FaceRegistrationScreen = () => {
         await AsyncStorage.setItem("access_token", refreshData.access);
         token = refreshData.access;
 
-        console.log("Token refreshed, retrying...");
+        console.log("Token refreshed successfully, retrying registration...");
+
+        // Recreate FormData for retry
+        const retryFormData = new FormData();
+        retryFormData.append("username", username);
+
+        if (Platform.OS === "web") {
+          const response = await fetch(capturedPhoto);
+          const blob = await response.blob();
+          retryFormData.append("image", blob, "face.jpg");
+        } else {
+          retryFormData.append("image", {
+            uri: capturedPhoto,
+            type: getMimeType(capturedPhoto),
+            name: getFileName(capturedPhoto),
+          });
+        }
 
         // Retry with new token
-        response = await fetch(`${API_URL}/api/face_registration`, {
+        response = await fetch(`${API_URL}/api/face/register/`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
           },
-          body: formData,
+          body: retryFormData,
         });
+
+        console.log("Retry response status:", response.status);
       }
 
-      const data = await response.json();
+      const responseText = await response.text();
+      console.log("Raw response:", responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Failed to parse response:", e);
+        throw new Error("Invalid server response");
+      }
+
       console.log("Response data:", data);
       setLoading(false);
 
       if (response.ok) {
-        Alert.alert("Success!", "Your face has been registered successfully.", [
-          {
-            text: "OK",
-            onPress: () => {
-              // Reset and navigate back
-              setCapturedPhotos({ front: null, left: null, right: null });
-              setCurrentStep(1);
-              if (router.canGoBack()) {
-                router.back();
-              }
+        Alert.alert(
+          "Success! 🎉",
+          "Your face has been registered successfully. You can now use face recognition for attendance.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                setCapturedPhoto(null);
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/");
+                }
+              },
             },
-          },
-        ]);
+          ],
+        );
       } else {
-        let errorMessage = "Failed to register face. Please try again.";
-
-        if (data.error) {
-          errorMessage = data.error;
-        } else if (data.image1 || data.image2 || data.image3) {
-          const firstError = data.image1 || data.image2 || data.image3;
-          errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
-        }
-
-        Alert.alert("Registration Failed", errorMessage);
+        handleRegistrationError(response.status, data);
       }
     } catch (error) {
       setLoading(false);
       console.error("Registration error:", error);
-      Alert.alert(
-        "Network Error",
-        "Failed to connect to server. Please check your connection and try again.",
-      );
+
+      if (error.message === "Network request failed") {
+        Alert.alert(
+          "Network Error",
+          `Cannot connect to server at ${API_URL}. Please check:\n\n` +
+            "1. Server is running\n" +
+            "2. Your device is on the same network\n" +
+            "3. Firewall allows connections\n" +
+            `4. API URL is correct: ${API_URL}`,
+          [{ text: "OK" }],
+        );
+      } else {
+        Alert.alert(
+          "Error",
+          error.message || "Failed to register face. Please try again.",
+          [{ text: "OK" }],
+        );
+      }
     }
   };
 
-  const cancelCamera = () => {
-    setShowCamera(false);
-    setCameraReady(false);
-    setCurrentStep(1);
+  const handleRegistrationError = (status, data) => {
+    let title = "Registration Failed";
+    let message = "An error occurred. Please try again.";
+
+    switch (status) {
+      case 400:
+        // Validation errors
+        if (data.error) {
+          message = data.error;
+        } else if (data.image) {
+          const imageError = Array.isArray(data.image)
+            ? data.image[0]
+            : data.image;
+          message = imageError;
+        } else if (data.username) {
+          const usernameError = Array.isArray(data.username)
+            ? data.username[0]
+            : data.username;
+          message = usernameError;
+        } else {
+          message =
+            "Invalid data. Please ensure your photo is clear and meets requirements.";
+        }
+        break;
+
+      case 403:
+        title = "Permission Denied";
+        message = data.error || "You can only register your own face.";
+        break;
+
+      case 413:
+        title = "File Too Large";
+        message = "Image file is too large. Please use a smaller photo.";
+        break;
+
+      case 500:
+        title = "Server Error";
+        message =
+          data.error ||
+          "Server error occurred. Please try again or contact support.";
+        break;
+
+      default:
+        message = data.error || data.message || "Please try again.";
+    }
+
+    Alert.alert(title, message, [{ text: "OK" }]);
   };
 
-  const renderStep1 = () => (
+  const renderIntroduction = () => (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
@@ -335,62 +416,58 @@ const FaceRegistrationScreen = () => {
 
       <View style={styles.heroSection}>
         <View style={styles.faceIconContainer}>
-          <Ionicons name="person-circle-outline" size={80} color="#00D9A5" />
+          <Ionicons name="scan-circle-outline" size={80} color="#00D9A5" />
         </View>
         <Text style={styles.title}>Register Your Face</Text>
         <Text style={styles.description}>
-          We'll capture your face from three angles to ensure accurate
-          recognition for attendance tracking
+          Set up facial recognition for quick and secure attendance tracking
         </Text>
       </View>
 
-      <View style={styles.stepsContainer}>
+      <View style={styles.requirementsCard}>
+        <View style={styles.requirementsHeader}>
+          <Ionicons name="information-circle" size={24} color="#00D9A5" />
+          <Text style={styles.requirementsTitle}>Photo Requirements</Text>
+        </View>
+
         {[
           {
-            num: 1,
-            title: "Face Forward",
+            icon: "sunny-outline",
+            text: "Good lighting",
+            desc: "Ensure your face is well-lit",
+          },
+          {
+            icon: "person-outline",
+            text: "Face the camera",
             desc: "Look directly at the camera",
-            icon: "happy-outline",
           },
           {
-            num: 2,
-            title: "Turn Left",
-            desc: "Slightly turn your head to the left",
-            icon: "arrow-back-circle-outline",
+            icon: "glasses-outline",
+            text: "No accessories",
+            desc: "Remove glasses, masks, or hats",
           },
           {
-            num: 3,
-            title: "Turn Right",
-            desc: "Slightly turn your head to the right",
-            icon: "arrow-forward-circle-outline",
+            icon: "image-outline",
+            text: "Clear background",
+            desc: "Stand against a plain background",
           },
-        ].map((step) => (
-          <View key={step.num} style={styles.stepCard}>
-            <View style={styles.stepNumber}>
-              <Text style={styles.stepNumberText}>{step.num}</Text>
+        ].map((req, idx) => (
+          <View key={idx} style={styles.requirementItem}>
+            <Ionicons name={req.icon} size={24} color="#00D9A5" />
+            <View style={styles.requirementText}>
+              <Text style={styles.requirementTitle}>{req.text}</Text>
+              <Text style={styles.requirementDesc}>{req.desc}</Text>
             </View>
-            <View style={styles.stepContent}>
-              <Text style={styles.stepTitle}>{step.title}</Text>
-              <Text style={styles.stepDescription}>{step.desc}</Text>
-            </View>
-            <Ionicons name={step.icon} size={32} color="#00D9A5" />
           </View>
         ))}
       </View>
 
-      <View style={styles.tipsContainer}>
-        <Text style={styles.tipsTitle}>Tips for Best Results</Text>
-        {[
-          { icon: "sunny", text: "Ensure good lighting on your face" },
-          { icon: "glasses-outline", text: "Remove glasses or face coverings" },
-          { icon: "happy-outline", text: "Keep a neutral expression" },
-          { icon: "locate-outline", text: "Position yourself in the center" },
-        ].map((tip, idx) => (
-          <View key={idx} style={styles.tipItem}>
-            <Ionicons name={tip.icon} size={20} color="#00D9A5" />
-            <Text style={styles.tipText}>{tip.text}</Text>
-          </View>
-        ))}
+      <View style={styles.securityNote}>
+        <Ionicons name="shield-checkmark-outline" size={20} color="#007AFF" />
+        <Text style={styles.securityText}>
+          Your photo is encrypted and stored securely. It will only be used for
+          attendance verification.
+        </Text>
       </View>
 
       <TouchableOpacity
@@ -399,12 +476,12 @@ const FaceRegistrationScreen = () => {
         activeOpacity={0.8}
       >
         <Ionicons name="camera" size={20} color="#fff" />
-        <Text style={styles.startButtonText}>Start Registration</Text>
+        <Text style={styles.startButtonText}>Open Camera</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 
-  const renderStep3 = () => (
+  const renderReview = () => (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
@@ -412,67 +489,50 @@ const FaceRegistrationScreen = () => {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => setCurrentStep(1)}
+          onPress={() => setCapturedPhoto(null)}
         >
           <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Review Photos</Text>
+        <Text style={styles.headerTitle}>Review Photo</Text>
         <View style={styles.placeholder} />
       </View>
 
       <View style={styles.reviewSection}>
-        <Text style={styles.reviewTitle}>Review Your Photos</Text>
+        <Text style={styles.reviewTitle}>Verify Your Photo</Text>
         <Text style={styles.reviewSubtitle}>
-          Make sure all photos are clear and well-lit
+          Make sure your face is clearly visible
         </Text>
 
-        <View style={styles.photosGrid}>
-          {[
-            { key: "front", label: "Front View", icon: "person-outline" },
-            {
-              key: "left",
-              label: "Left Profile",
-              icon: "arrow-back-circle-outline",
-            },
-            {
-              key: "right",
-              label: "Right Profile",
-              icon: "arrow-forward-circle-outline",
-            },
-          ].map((photo) => (
-            <View key={photo.key} style={styles.photoCard}>
-              <View style={styles.photoLabelRow}>
-                <Ionicons name={photo.icon} size={20} color="#00D9A5" />
-                <Text style={styles.photoLabel}>{photo.label}</Text>
-              </View>
-              {capturedPhotos[photo.key] ? (
-                <>
-                  <Image
-                    source={{ uri: capturedPhotos[photo.key] }}
-                    style={styles.photoPreview}
-                  />
-                  <TouchableOpacity
-                    style={styles.retakeButton}
-                    onPress={() => retakePhoto(photo.key)}
-                  >
-                    <Ionicons name="camera-reverse" size={16} color="#007AFF" />
-                    <Text style={styles.retakeText}>Retake</Text>
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <View style={styles.photoPlaceholder}>
-                  <Ionicons name="camera-outline" size={40} color="#ccc" />
+        <View style={styles.photoContainer}>
+          <Image source={{ uri: capturedPhoto }} style={styles.photoPreview} />
+
+          <View style={styles.photoOverlay}>
+            <View style={styles.checklistOverlay}>
+              {[
+                "Face is centered",
+                "Good lighting",
+                "Clear image",
+                "No obstructions",
+              ].map((item, idx) => (
+                <View key={idx} style={styles.checklistItem}>
+                  <Ionicons name="checkmark-circle" size={18} color="#00D9A5" />
+                  <Text style={styles.checklistText}>{item}</Text>
                 </View>
-              )}
+              ))}
             </View>
-          ))}
+          </View>
         </View>
 
+        <TouchableOpacity style={styles.retakeButton} onPress={retakePhoto}>
+          <Ionicons name="camera-reverse-outline" size={20} color="#007AFF" />
+          <Text style={styles.retakeText}>Retake Photo</Text>
+        </TouchableOpacity>
+
         <View style={styles.infoBox}>
-          <Ionicons name="shield-checkmark" size={24} color="#007AFF" />
+          <Ionicons name="information-circle" size={24} color="#007AFF" />
           <Text style={styles.infoText}>
-            These photos will be securely stored and used only for attendance
-            verification
+            This photo will be securely stored and used only for attendance
+            verification purposes.
           </Text>
         </View>
 
@@ -489,10 +549,12 @@ const FaceRegistrationScreen = () => {
             </>
           ) : (
             <>
-              <Ionicons name="checkmark-circle" size={20} color="#fff" />
-              <Text style={styles.registerButtonText}>
-                Complete Registration
-              </Text>
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={22}
+                color="#fff"
+              />
+              <Text style={styles.registerButtonText}>Register Face</Text>
             </>
           )}
         </TouchableOpacity>
@@ -502,8 +564,7 @@ const FaceRegistrationScreen = () => {
 
   return (
     <View style={styles.container}>
-      {currentStep === 1 && renderStep1()}
-      {currentStep === 3 && renderStep3()}
+      {!capturedPhoto ? renderIntroduction() : renderReview()}
 
       {/* Camera Modal */}
       <Modal visible={showCamera} animationType="slide" transparent={false}>
@@ -515,64 +576,55 @@ const FaceRegistrationScreen = () => {
             onCameraReady={handleCameraReady}
           >
             <View style={styles.cameraOverlay}>
+              {/* Header */}
               <View style={styles.cameraHeader}>
-                <View style={styles.progressContainer}>
-                  <View
-                    style={[
-                      styles.progressDot,
-                      capturedPhotos.front && styles.progressDotActive,
-                    ]}
-                  />
-                  <View style={styles.progressLine} />
-                  <View
-                    style={[
-                      styles.progressDot,
-                      capturedPhotos.left && styles.progressDotActive,
-                    ]}
-                  />
-                  <View style={styles.progressLine} />
-                  <View
-                    style={[
-                      styles.progressDot,
-                      capturedPhotos.right && styles.progressDotActive,
-                    ]}
-                  />
-                </View>
-
-                <Text style={styles.cameraTitle}>
-                  {instructions[currentAngle].title}
-                </Text>
+                <Text style={styles.cameraTitle}>Position Your Face</Text>
                 <Text style={styles.cameraSubtitle}>
-                  {instructions[currentAngle].subtitle}
+                  Center your face in the oval guide
                 </Text>
-                <Ionicons
-                  name={instructions[currentAngle].icon}
-                  size={50}
-                  color="#00D9A5"
-                  style={styles.angleIcon}
-                />
 
                 {!cameraReady && (
                   <View style={styles.cameraLoadingContainer}>
-                    <ActivityIndicator color="#00D9A5" />
+                    <ActivityIndicator color="#00D9A5" size="large" />
                     <Text style={styles.cameraLoadingText}>
-                      Initializing camera...
+                      Preparing camera...
                     </Text>
                   </View>
                 )}
               </View>
 
-              <View style={styles.faceGuide}>
-                <View style={styles.faceOutline}>
-                  <Ionicons
-                    name="person-outline"
-                    size={100}
-                    color="#00D9A5"
-                    style={styles.faceGuideIcon}
-                  />
+              {/* Face Guide */}
+              <View style={styles.faceGuideContainer}>
+                <View style={styles.faceGuide}>
+                  <View style={styles.faceOutline} />
+                  {cameraReady && (
+                    <View style={styles.guideInstructions}>
+                      <View style={styles.guideInstruction}>
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={16}
+                          color="#00D9A5"
+                        />
+                        <Text style={styles.guideInstructionText}>
+                          Face centered
+                        </Text>
+                      </View>
+                      <View style={styles.guideInstruction}>
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={16}
+                          color="#00D9A5"
+                        />
+                        <Text style={styles.guideInstructionText}>
+                          Good lighting
+                        </Text>
+                      </View>
+                    </View>
+                  )}
                 </View>
               </View>
 
+              {/* Buttons */}
               <View style={styles.cameraButtons}>
                 <TouchableOpacity
                   style={styles.cancelButton}
@@ -602,14 +654,16 @@ const FaceRegistrationScreen = () => {
         </View>
       </Modal>
 
-      {/* Loading Modal */}
+      {/* Loading Overlay */}
       {loading && (
         <Modal visible={loading} transparent animationType="fade">
           <View style={styles.loadingOverlay}>
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#00D9A5" />
               <Text style={styles.loadingText}>Registering your face...</Text>
-              <Text style={styles.loadingSubtext}>Please wait</Text>
+              <Text style={styles.loadingSubtext}>
+                This may take a few seconds
+              </Text>
             </View>
           </View>
         </Modal>
@@ -631,7 +685,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: Platform.OS === "ios" ? 60 : 40,
     paddingBottom: 20,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
@@ -653,19 +707,19 @@ const styles = StyleSheet.create({
   heroSection: {
     backgroundColor: "#fff",
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 32,
     paddingBottom: 40,
     alignItems: "center",
   },
   faceIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     backgroundColor: "#F0FDF9",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
-    borderWidth: 2,
+    marginBottom: 24,
+    borderWidth: 3,
     borderColor: "#00D9A5",
   },
   title: {
@@ -676,23 +730,18 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   description: {
-    fontSize: 15,
+    fontSize: 16,
     color: "#666",
     textAlign: "center",
-    lineHeight: 22,
+    lineHeight: 24,
     paddingHorizontal: 20,
   },
-  stepsContainer: {
-    paddingHorizontal: 20,
-    marginTop: 24,
-  },
-  stepCard: {
-    flexDirection: "row",
+  requirementsCard: {
     backgroundColor: "#fff",
     borderRadius: 16,
     padding: 20,
-    marginBottom: 12,
-    alignItems: "center",
+    marginHorizontal: 20,
+    marginTop: 24,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -705,56 +754,51 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  stepNumber: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#00D9A5",
-    justifyContent: "center",
+  requirementsHeader: {
+    flexDirection: "row",
     alignItems: "center",
-    marginRight: 16,
+    marginBottom: 20,
   },
-  stepNumberText: {
+  requirementsTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  stepContent: {
-    flex: 1,
-  },
-  stepTitle: {
-    fontSize: 16,
     fontWeight: "600",
     color: "#1a1a1a",
-    marginBottom: 4,
+    marginLeft: 12,
   },
-  stepDescription: {
-    fontSize: 14,
+  requirementItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 16,
+  },
+  requirementText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  requirementTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1a1a1a",
+    marginBottom: 2,
+  },
+  requirementDesc: {
+    fontSize: 13,
     color: "#666",
   },
-  tipsContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
+  securityNote: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0F7FF",
+    padding: 16,
+    borderRadius: 12,
     marginHorizontal: 20,
     marginTop: 24,
   },
-  tipsTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1a1a1a",
-    marginBottom: 16,
-  },
-  tipItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  tipText: {
-    fontSize: 14,
-    color: "#666",
-    marginLeft: 12,
+  securityText: {
     flex: 1,
+    fontSize: 13,
+    color: "#007AFF",
+    lineHeight: 18,
+    marginLeft: 12,
   },
   startButton: {
     flexDirection: "row",
@@ -785,7 +829,7 @@ const styles = StyleSheet.create({
   },
   reviewSection: {
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 24,
   },
   reviewTitle: {
     fontSize: 24,
@@ -798,65 +842,68 @@ const styles = StyleSheet.create({
     color: "#666",
     marginBottom: 24,
   },
-  photosGrid: {
-    marginBottom: 16,
-  },
-  photoCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+  photoContainer: {
+    position: "relative",
+    borderRadius: 20,
+    overflow: "hidden",
+    backgroundColor: "#000",
     ...Platform.select({
       ios: {
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 2,
+        elevation: 8,
       },
     }),
   },
-  photoLabelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  photoLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1a1a1a",
-    marginLeft: 8,
-  },
   photoPreview: {
     width: "100%",
-    height: 200,
-    borderRadius: 12,
-    backgroundColor: "#f0f0f0",
+    height: 480,
+    resizeMode: "cover",
   },
-  photoPlaceholder: {
-    width: "100%",
-    height: 200,
+  photoOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent)",
+  },
+  checklistOverlay: {
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     borderRadius: 12,
-    backgroundColor: "#f0f0f0",
-    justifyContent: "center",
+    padding: 16,
+  },
+  checklistItem: {
+    flexDirection: "row",
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#e0e0e0",
-    borderStyle: "dashed",
+    marginBottom: 8,
+  },
+  checklistText: {
+    fontSize: 14,
+    color: "#fff",
+    marginLeft: 8,
+    fontWeight: "500",
   },
   retakeButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 12,
+    backgroundColor: "#fff",
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 20,
+    borderWidth: 2,
+    borderColor: "#007AFF",
   },
   retakeText: {
-    fontSize: 14,
+    fontSize: 16,
     color: "#007AFF",
     fontWeight: "600",
-    marginLeft: 6,
+    marginLeft: 8,
   },
   infoBox: {
     flexDirection: "row",
@@ -864,7 +911,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0F7FF",
     padding: 16,
     borderRadius: 12,
-    marginTop: 8,
+    marginTop: 20,
   },
   infoText: {
     flex: 1,
@@ -894,7 +941,7 @@ const styles = StyleSheet.create({
     }),
   },
   buttonDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   registerButtonText: {
     fontSize: 17,
@@ -911,35 +958,13 @@ const styles = StyleSheet.create({
   },
   cameraOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
     justifyContent: "space-between",
   },
   cameraHeader: {
-    paddingTop: 60,
+    paddingTop: Platform.OS === "ios" ? 60 : 40,
     paddingHorizontal: 20,
     alignItems: "center",
-  },
-  progressContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  progressDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-  progressDotActive: {
-    backgroundColor: "#00D9A5",
-    borderColor: "#00D9A5",
-  },
-  progressLine: {
-    width: 40,
-    height: 2,
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
   },
   cameraTitle: {
     fontSize: 24,
@@ -949,49 +974,64 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   cameraSubtitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#fff",
     opacity: 0.9,
     textAlign: "center",
-    marginBottom: 16,
-  },
-  angleIcon: {
-    marginTop: 8,
   },
   cameraLoadingContainer: {
-    marginTop: 16,
+    marginTop: 24,
     alignItems: "center",
   },
   cameraLoadingText: {
     color: "#fff",
-    fontSize: 14,
-    marginTop: 8,
+    fontSize: 15,
+    marginTop: 12,
+    fontWeight: "500",
   },
-  faceGuide: {
+  faceGuideContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  faceGuide: {
+    alignItems: "center",
   },
   faceOutline: {
-    width: 250,
-    height: 320,
-    borderRadius: 125,
+    width: 280,
+    height: 360,
+    borderRadius: 180,
     borderWidth: 3,
     borderColor: "#00D9A5",
     borderStyle: "dashed",
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: "rgba(0, 217, 165, 0.1)",
   },
-  faceGuideIcon: {
-    opacity: 0.5,
+  guideInstructions: {
+    marginTop: 24,
+    alignItems: "center",
+  },
+  guideInstruction: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 217, 165, 0.2)",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 8,
+  },
+  guideInstructionText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 8,
   },
   cameraButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 30,
-    paddingBottom: 50,
+    paddingBottom: Platform.OS === "ios" ? 50 : 30,
   },
   cancelButton: {
     width: 80,
@@ -1014,12 +1054,12 @@ const styles = StyleSheet.create({
     borderColor: "#fff",
   },
   captureButtonDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   captureButtonInner: {
-    width: 65,
-    height: 65,
-    borderRadius: 32.5,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: "#00D9A5",
     justifyContent: "center",
     alignItems: "center",
@@ -1038,6 +1078,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 40,
     alignItems: "center",
+    minWidth: 280,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -1055,11 +1096,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#1a1a1a",
     marginTop: 20,
+    textAlign: "center",
   },
   loadingSubtext: {
     fontSize: 14,
     color: "#666",
     marginTop: 8,
+    textAlign: "center",
   },
 });
 

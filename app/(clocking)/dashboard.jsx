@@ -210,12 +210,7 @@ export default function HRDashboard() {
       icon: "people-outline",
       label: "Employees",
       hasSubmenu: true,
-      submenu: [
-        "All-Employees",
-        "Add-Employee",
-        "Employee-Profile",
-        "Organization-Chart",
-      ],
+      submenu: ["All-Employees", "Add-Employee", "Organization-Chart"],
     },
     {
       id: "Recruitment",
@@ -229,7 +224,6 @@ export default function HRDashboard() {
         "Applications",
         "Interviews",
         "Offers",
-        "Onboarding",
       ],
     },
     {
@@ -254,7 +248,6 @@ export default function HRDashboard() {
         "Leave-Balance",
         "New-Leave-Request",
         "Leave-Calendar",
-        "Leave-Types",
       ],
     },
     {
