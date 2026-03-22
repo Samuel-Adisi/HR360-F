@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import api from "../src/services/api"; // ← your axios instance
 
 const FaceRegistrationScreen = () => {
   const [showCamera, setShowCamera] = useState(false);
@@ -22,19 +23,9 @@ const FaceRegistrationScreen = () => {
   const [cameraReady, setCameraReady] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef(null);
-
   const [capturedPhoto, setCapturedPhoto] = useState(null);
   const [username, setUsername] = useState("");
 
-  // Your backend URL - UPDATE THIS
-  const API_URL = Platform.select({
-    web: "http://localhost:8000",
-    android: "http://10.0.2.2:8000", // Android emulator
-    ios: "http://localhost:8000", // iOS simulator
-    default: "http://192.168.1.100:8000", // Physical device - change to your IP
-  });
-
-  // Load username on mount
   React.useEffect(() => {
     loadUsername();
   }, []);
@@ -42,9 +33,7 @@ const FaceRegistrationScreen = () => {
   const loadUsername = async () => {
     try {
       const storedUsername = await AsyncStorage.getItem("username");
-      if (storedUsername) {
-        setUsername(storedUsername);
-      }
+      if (storedUsername) setUsername(storedUsername);
     } catch (error) {
       console.error("Error loading username:", error);
     }
@@ -55,22 +44,17 @@ const FaceRegistrationScreen = () => {
       Alert.alert("Error", "Camera permissions not available");
       return;
     }
-
     if (!permission.granted) {
       const result = await requestPermission();
       if (!result.granted) {
         Alert.alert(
           "Camera Permission Required",
           "Please allow camera access to register your face for attendance tracking.",
-          [
-            { text: "Cancel", style: "cancel" },
-            { text: "Open Settings", onPress: () => {} },
-          ],
+          [{ text: "Cancel", style: "cancel" }, { text: "Open Settings" }],
         );
         return;
       }
     }
-
     setCameraReady(false);
     setShowCamera(true);
   };
@@ -85,33 +69,23 @@ const FaceRegistrationScreen = () => {
       Alert.alert("Please Wait", "Camera is still initializing...");
       return;
     }
-
     if (!cameraRef.current) {
       Alert.alert("Error", "Camera not available");
       return;
     }
-
     try {
-      console.log("Taking photo...");
-
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.9,
         base64: false,
         skipProcessing: false,
         exif: false,
       });
-
       console.log("✓ Photo captured:", photo.uri);
-
       setCapturedPhoto(photo.uri);
       setShowCamera(false);
     } catch (error) {
       console.error("Error taking picture:", error);
-      Alert.alert(
-        "Camera Error",
-        "Failed to capture photo. Please try again.",
-        [{ text: "OK" }],
-      );
+      Alert.alert("Camera Error", "Failed to capture photo. Please try again.");
     }
   };
 
@@ -126,12 +100,57 @@ const FaceRegistrationScreen = () => {
     setCameraReady(false);
   };
 
+  // ─── Helper functions ────────────────────────────────────────
+  const getFileName = (uri) => {
+    const parts = uri.split("/");
+    return parts[parts.length - 1] || "photo.jpg";
+  };
+
+  const getFileExtension = (uri) => {
+    const filename = getFileName(uri);
+    const parts = filename.split(".");
+    return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : "jpg";
+  };
+
+  const getMimeType = (uri) => {
+    const ext = getFileExtension(uri);
+    const mimeTypes = {
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      webp: "image/webp",
+    };
+    return mimeTypes[ext] || "image/jpeg";
+  };
+
+  // ─── Build FormData ──────────────────────────────────────────
+  const buildFormData = async (photoUri) => {
+    const formData = new FormData();
+    formData.append("username", username);
+
+    if (Platform.OS === "web") {
+      // Web: convert URI to blob
+      const response = await fetch(photoUri);
+      const blob = await response.blob();
+      formData.append("image", blob, "face.jpg");
+    } else {
+      // Native: append as file object
+      formData.append("image", {
+        uri: photoUri,
+        type: getMimeType(photoUri),
+        name: getFileName(photoUri),
+      });
+    }
+
+    return formData;
+  };
+
+  // ─── Main register handler ───────────────────────────────────
   const handleRegister = async () => {
     if (!capturedPhoto) {
       Alert.alert("Error", "Please capture a photo first");
       return;
     }
-
     if (!username) {
       Alert.alert("Error", "Username not found. Please login again.");
       return;
@@ -140,253 +159,96 @@ const FaceRegistrationScreen = () => {
     setLoading(true);
 
     try {
-      console.log("Creating FormData...");
-      const formData = new FormData();
+      const formData = await buildFormData(capturedPhoto);
 
-      // Add username
-      formData.append("username", username);
-
-      // Helper to get filename from URI
-      const getFileName = (uri) => {
-        const parts = uri.split("/");
-        return parts[parts.length - 1] || "photo.jpg";
-      };
-
-      // Helper to get file extension
-      const getFileExtension = (uri) => {
-        const filename = getFileName(uri);
-        const parts = filename.split(".");
-        return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : "jpg";
-      };
-
-      // Helper to get MIME type
-      const getMimeType = (uri) => {
-        const ext = getFileExtension(uri);
-        const mimeTypes = {
-          jpg: "image/jpeg",
-          jpeg: "image/jpeg",
-          png: "image/png",
-          webp: "image/webp",
-        };
-        return mimeTypes[ext] || "image/jpeg";
-      };
-
-      // Platform-specific image handling
-      if (Platform.OS === "web") {
-        console.log("Processing image for web...");
-
-        const response = await fetch(capturedPhoto);
-        const blob = await response.blob();
-
-        console.log("Blob size:", blob.size, "Type:", blob.type);
-
-        formData.append("image", blob, "face.jpg");
-      } else {
-        console.log("Processing image for native...");
-
-        const imageFile = {
-          uri: capturedPhoto,
-          type: getMimeType(capturedPhoto),
-          name: getFileName(capturedPhoto),
-        };
-
-        console.log("Image file:", imageFile);
-
-        formData.append("image", imageFile);
-      }
-
-      console.log("Getting access token...");
-      let token = await AsyncStorage.getItem("access_token");
-
-      if (!token) {
-        Alert.alert("Session Expired", "Please login again.");
-        setLoading(false);
-        router.replace("/login");
-        return;
-      }
-
-      console.log("Sending request to:", `${API_URL}/api/face/register/`);
-      console.log("Username:", username);
-
-      // First attempt with current token
-      let response = await fetch(`${API_URL}/api/face/register/`, {
-        method: "POST",
+      // POST to backend using axios instance
+      const response = await api.post("/api/face/register/", formData, {
         headers: {
-          Authorization: `Bearer ${token}`,
-          // Don't set Content-Type - let FormData set it with boundary
+          "Content-Type": "multipart/form-data",
         },
-        body: formData,
       });
 
-      console.log("Response status:", response.status);
-
-      // Handle token refresh if expired
-      if (response.status === 401) {
-        console.log("Token expired, attempting refresh...");
-
-        const refreshToken = await AsyncStorage.getItem("refresh_token");
-
-        if (!refreshToken) {
-          setLoading(false);
-          Alert.alert("Session Expired", "Please login again.");
-          router.replace("/login");
-          return;
-        }
-
-        const refreshResponse = await fetch(`${API_URL}/api/token/refresh/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            refresh: refreshToken,
-          }),
-        });
-
-        if (!refreshResponse.ok) {
-          console.log("Token refresh failed");
-          await AsyncStorage.multiRemove(["access_token", "refresh_token"]);
-          setLoading(false);
-          Alert.alert("Session Expired", "Please login again.");
-          router.replace("/login");
-          return;
-        }
-
-        const refreshData = await refreshResponse.json();
-        await AsyncStorage.setItem("access_token", refreshData.access);
-        token = refreshData.access;
-
-        console.log("Token refreshed successfully, retrying registration...");
-
-        // Recreate FormData for retry
-        const retryFormData = new FormData();
-        retryFormData.append("username", username);
-
-        if (Platform.OS === "web") {
-          const response = await fetch(capturedPhoto);
-          const blob = await response.blob();
-          retryFormData.append("image", blob, "face.jpg");
-        } else {
-          retryFormData.append("image", {
-            uri: capturedPhoto,
-            type: getMimeType(capturedPhoto),
-            name: getFileName(capturedPhoto),
-          });
-        }
-
-        // Retry with new token
-        response = await fetch(`${API_URL}/api/face/register/`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: retryFormData,
-        });
-
-        console.log("Retry response status:", response.status);
-      }
-
-      const responseText = await response.text();
-      console.log("Raw response:", responseText);
-
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        console.error("Failed to parse response:", e);
-        throw new Error("Invalid server response");
-      }
-
-      console.log("Response data:", data);
       setLoading(false);
+      console.log("✓ Registration response:", response.data);
 
-      if (response.ok) {
-        Alert.alert(
-          "Success! 🎉",
-          "Your face has been registered successfully. You can now use face recognition for attendance.",
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                setCapturedPhoto(null);
-                if (router.canGoBack()) {
-                  router.back();
-                } else {
-                  router.replace("/");
-                }
-              },
+      Alert.alert(
+        "Success! 🎉",
+        "Your face has been registered successfully. You can now use face recognition for attendance.",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              setCapturedPhoto(null);
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/");
+              }
             },
-          ],
-        );
-      } else {
-        handleRegistrationError(response.status, data);
-      }
+          },
+        ],
+      );
     } catch (error) {
       setLoading(false);
       console.error("Registration error:", error);
-
-      if (error.message === "Network request failed") {
-        Alert.alert(
-          "Network Error",
-          `Cannot connect to server at ${API_URL}. Please check:\n\n` +
-            "1. Server is running\n" +
-            "2. Your device is on the same network\n" +
-            "3. Firewall allows connections\n" +
-            `4. API URL is correct: ${API_URL}`,
-          [{ text: "OK" }],
-        );
-      } else {
-        Alert.alert(
-          "Error",
-          error.message || "Failed to register face. Please try again.",
-          [{ text: "OK" }],
-        );
-      }
+      handleRegistrationError(error);
     }
   };
 
-  const handleRegistrationError = (status, data) => {
+  // ─── Error handler ───────────────────────────────────────────
+  // Axios puts the response inside error.response
+  const handleRegistrationError = (error) => {
+    // Network error (no response at all)
+    if (!error.response) {
+      Alert.alert(
+        "Network Error",
+        "Cannot connect to server. Please check:\n\n" +
+          "1. Server is running\n" +
+          "2. Your device is on the same network\n" +
+          "3. Firewall allows connections",
+        [{ text: "OK" }],
+      );
+      return;
+    }
+
+    const { status, data } = error.response;
     let title = "Registration Failed";
     let message = "An error occurred. Please try again.";
 
     switch (status) {
       case 400:
-        // Validation errors
         if (data.error) {
           message = data.error;
         } else if (data.image) {
-          const imageError = Array.isArray(data.image)
-            ? data.image[0]
-            : data.image;
-          message = imageError;
+          message = Array.isArray(data.image) ? data.image[0] : data.image;
         } else if (data.username) {
-          const usernameError = Array.isArray(data.username)
+          message = Array.isArray(data.username)
             ? data.username[0]
             : data.username;
-          message = usernameError;
         } else {
           message =
             "Invalid data. Please ensure your photo is clear and meets requirements.";
         }
         break;
-
+      case 401:
+        title = "Session Expired";
+        message = "Please login again.";
+        router.replace("/login");
+        break;
       case 403:
         title = "Permission Denied";
         message = data.error || "You can only register your own face.";
         break;
-
       case 413:
         title = "File Too Large";
         message = "Image file is too large. Please use a smaller photo.";
         break;
-
       case 500:
         title = "Server Error";
         message =
           data.error ||
           "Server error occurred. Please try again or contact support.";
         break;
-
       default:
         message = data.error || data.message || "Please try again.";
     }
@@ -394,6 +256,7 @@ const FaceRegistrationScreen = () => {
     Alert.alert(title, message, [{ text: "OK" }]);
   };
 
+  // ─── Render ──────────────────────────────────────────────────
   const renderIntroduction = () => (
     <ScrollView
       style={styles.container}
@@ -402,11 +265,7 @@ const FaceRegistrationScreen = () => {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-            }
-          }}
+          onPress={() => router.canGoBack() && router.back()}
         >
           <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
         </TouchableOpacity>
@@ -429,7 +288,6 @@ const FaceRegistrationScreen = () => {
           <Ionicons name="information-circle" size={24} color="#00D9A5" />
           <Text style={styles.requirementsTitle}>Photo Requirements</Text>
         </View>
-
         {[
           {
             icon: "sunny-outline",
@@ -505,7 +363,6 @@ const FaceRegistrationScreen = () => {
 
         <View style={styles.photoContainer}>
           <Image source={{ uri: capturedPhoto }} style={styles.photoPreview} />
-
           <View style={styles.photoOverlay}>
             <View style={styles.checklistOverlay}>
               {[
@@ -576,13 +433,11 @@ const FaceRegistrationScreen = () => {
             onCameraReady={handleCameraReady}
           >
             <View style={styles.cameraOverlay}>
-              {/* Header */}
               <View style={styles.cameraHeader}>
                 <Text style={styles.cameraTitle}>Position Your Face</Text>
                 <Text style={styles.cameraSubtitle}>
                   Center your face in the oval guide
                 </Text>
-
                 {!cameraReady && (
                   <View style={styles.cameraLoadingContainer}>
                     <ActivityIndicator color="#00D9A5" size="large" />
@@ -593,38 +448,28 @@ const FaceRegistrationScreen = () => {
                 )}
               </View>
 
-              {/* Face Guide */}
               <View style={styles.faceGuideContainer}>
                 <View style={styles.faceGuide}>
                   <View style={styles.faceOutline} />
                   {cameraReady && (
                     <View style={styles.guideInstructions}>
-                      <View style={styles.guideInstruction}>
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={16}
-                          color="#00D9A5"
-                        />
-                        <Text style={styles.guideInstructionText}>
-                          Face centered
-                        </Text>
-                      </View>
-                      <View style={styles.guideInstruction}>
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={16}
-                          color="#00D9A5"
-                        />
-                        <Text style={styles.guideInstructionText}>
-                          Good lighting
-                        </Text>
-                      </View>
+                      {["Face centered", "Good lighting"].map((label, idx) => (
+                        <View key={idx} style={styles.guideInstruction}>
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={16}
+                            color="#00D9A5"
+                          />
+                          <Text style={styles.guideInstructionText}>
+                            {label}
+                          </Text>
+                        </View>
+                      ))}
                     </View>
                   )}
                 </View>
               </View>
 
-              {/* Buttons */}
               <View style={styles.cameraButtons}>
                 <TouchableOpacity
                   style={styles.cancelButton}
@@ -633,7 +478,6 @@ const FaceRegistrationScreen = () => {
                   <Ionicons name="close-circle" size={28} color="#fff" />
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
-
                 <TouchableOpacity
                   style={[
                     styles.captureButton,
@@ -646,7 +490,6 @@ const FaceRegistrationScreen = () => {
                     <Ionicons name="camera" size={32} color="#fff" />
                   </View>
                 </TouchableOpacity>
-
                 <View style={styles.placeholderButton} />
               </View>
             </View>
@@ -671,6 +514,8 @@ const FaceRegistrationScreen = () => {
     </View>
   );
 };
+
+// styles unchanged — paste your original styles here
 
 const styles = StyleSheet.create({
   container: {

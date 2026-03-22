@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useState } from "react";
 import {
   Alert,
@@ -12,8 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import api from "../src/services/api";
+import api from "../../src/services/api";
 
 const AddProjectScreen = () => {
   const [formData, setFormData] = useState({
@@ -236,7 +236,7 @@ const AddProjectScreen = () => {
             });
           },
         },
-      ]
+      ],
     );
   };
 
@@ -266,7 +266,7 @@ const AddProjectScreen = () => {
     showPicker,
     setShowPicker,
     onDateChange,
-    required = false
+    required = false,
   ) => (
     <View style={styles.inputGroup}>
       <Text style={styles.inputLabel}>
@@ -334,7 +334,7 @@ const AddProjectScreen = () => {
     showPicker,
     setShowPicker,
     onDateChange,
-    required = false
+    required = false,
   ) => {
     if (Platform.OS === "web") {
       return renderWebDateInput(label, field, required);
@@ -345,7 +345,7 @@ const AddProjectScreen = () => {
       showPicker,
       setShowPicker,
       onDateChange,
-      required
+      required,
     );
   };
 
@@ -446,10 +446,7 @@ const AddProjectScreen = () => {
           <View style={styles.headerButton} />
         </View>
 
-        <ScrollView
-          style={styles.content}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Project Information</Text>
 
@@ -471,14 +468,14 @@ const AddProjectScreen = () => {
               "Status",
               "status",
               ["Active", "Pending", "On Hold", "Closed"],
-              true
+              true,
             )}
 
             {renderPicker(
               "Priority",
               "priority",
               ["High", "Medium", "Low"],
-              true
+              true,
             )}
           </View>
 
@@ -491,7 +488,7 @@ const AddProjectScreen = () => {
               showStartDatePicker,
               setShowStartDatePicker,
               onStartDateChange,
-              true
+              true,
             )}
 
             {renderDatePicker(
@@ -500,7 +497,7 @@ const AddProjectScreen = () => {
               showDeadlinePicker,
               setShowDeadlinePicker,
               onDeadlineChange,
-              true
+              true,
             )}
 
             {renderInput("Budget", "budget", {

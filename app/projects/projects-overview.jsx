@@ -14,7 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import api from "../src/services/api";
+import api from "../../src/services/api";
 
 const AllProjectsScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");

@@ -215,7 +215,7 @@ export default function HRDashboard() {
     {
       id: "Recruitment",
       icon: "briefcase-outline",
-      label: "Recruitment",
+      label: "Recruitment & Unboarding",
       hasSubmenu: true,
       submenu: [
         "Recruitment-Dashboard",
@@ -229,13 +229,13 @@ export default function HRDashboard() {
     {
       id: "Attendance",
       icon: "calendar-outline",
-      label: "Attendance",
+      label: "Attendance & Time trackling",
       hasSubmenu: true,
       submenu: [
-        "Todays-Attendance",
         "Attendance-Report",
-        "Time-Tracking",
         "Shift-Roster",
+        "Timesheets",
+        "Overtime-Trackling",
       ],
     },
     {
@@ -250,7 +250,7 @@ export default function HRDashboard() {
         "Leave-Calendar",
       ],
     },
-    {
+    /*{
       id: "Performance",
       icon: "trophy-outline",
       label: "Performance",
@@ -263,6 +263,7 @@ export default function HRDashboard() {
         "KPIs",
       ],
     },
+    */
     {
       id: "Payroll",
       icon: "cash-outline",
@@ -270,32 +271,27 @@ export default function HRDashboard() {
       hasSubmenu: true,
       submenu: [
         "Payroll-Dashboard",
+        "Process-Payroll",
         "Employee-Salary",
         "Payslips",
-        "Process-Payroll",
-        "Tax-Management",
+        "Deductions & Benefits",
       ],
     },
-    {
+    /* {
       id: "Projects",
       icon: "folder-outline",
       label: "Projects",
       hasSubmenu: true,
       submenu: [
-        "All-Projects",
+        "Projects-Overview",
         "Add-Project",
         "Project-Tasks",
-        "Project-Timeline",
+        "Project-Trackling",
       ],
     },
-    {
-      id: "TimeTracking",
-      icon: "time-outline",
-      label: "Time Tracking",
-      hasSubmenu: true,
-      submenu: ["Timesheets", "Project-Hours", "Overtime", "Time-Reports"],
-    },
-    {
+    */
+
+    /* {
       id: "Training",
       icon: "school-outline",
       label: "Training & Development",
@@ -308,7 +304,8 @@ export default function HRDashboard() {
         "Skills-Matrix",
       ],
     },
-    {
+*/
+    /*{
       id: "Expenses",
       icon: "receipt-outline",
       label: "Expenses",
@@ -320,7 +317,9 @@ export default function HRDashboard() {
         "Expense-Reports",
       ],
     },
-    {
+    */
+
+    /*{
       id: "Assets",
       icon: "laptop-outline",
       label: "Assets Management",
@@ -332,40 +331,36 @@ export default function HRDashboard() {
         "Asset-Maintenance",
       ],
     },
+    */
     {
       id: "Documents",
       icon: "document-attach-outline",
       label: "Documents",
       hasSubmenu: true,
-      submenu: [
-        "Document-Library",
-        "Employee-Documents",
-        "Policies",
-        "Contracts",
-        "Upload-Document",
-      ],
+      submenu: ["Documents", "Upload-Document"],
     },
     {
       id: "Departments",
       icon: "business-outline",
       label: "Departments",
       hasSubmenu: true,
-      submenu: ["All-Departments", "Add-Department", "Department-Structure"],
+      submenu: ["All-Departments", "Add-Department"],
     },
-    {
+    /*{
       id: "Clients",
       icon: "person-outline",
       label: "Clients",
       hasSubmenu: true,
       submenu: ["All-Clients", "Add-Client", "Client-Contracts"],
     },
-    {
+    /* {
       id: "Holidays",
       icon: "gift-outline",
       label: "Holidays",
       hasSubmenu: true,
       submenu: ["Holiday-Calendar", "Add-Holiday", "Holiday-List"],
     },
+    */
     {
       id: "Announcements",
       icon: "megaphone-outline",
@@ -378,12 +373,7 @@ export default function HRDashboard() {
       icon: "checkmark-done-outline",
       label: "Approvals",
       hasSubmenu: true,
-      submenu: [
-        "Pending-Approvals",
-        "Leave-Approvals",
-        "Expense-Approvals",
-        "Timesheet-Approvals",
-      ],
+      submenu: ["Pending-Approvals", "Leave-Approvals", "Timesheet-Approvals"],
     },
     {
       id: "Reports",
@@ -391,15 +381,13 @@ export default function HRDashboard() {
       label: "Reports & Analytics",
       hasSubmenu: true,
       submenu: [
-        "Dashboard",
         "Attendance-Reports",
         "Payroll-Reports",
-        "Performance-Reports",
         "Custom-Reports",
         "Export-Data",
       ],
     },
-    {
+    /*{
       id: "Accounts",
       icon: "wallet-outline",
       label: "Accounts",
@@ -411,13 +399,15 @@ export default function HRDashboard() {
         "Budget-Management",
       ],
     },
-    {
+    */
+    /*{
       id: "Loans",
       icon: "card-outline",
       label: "Loans & Advances",
       hasSubmenu: true,
       submenu: ["All-Loans", "Apply-Loan", "Loan-Approvals", "Loan-Repayments"],
     },
+    */
     {
       id: "Benefits",
       icon: "heart-outline",
@@ -444,26 +434,29 @@ export default function HRDashboard() {
       hasSubmenu: true,
       submenu: ["Labor-Laws", "Certifications", "Audits", "Policy-Compliance"],
     },
-    {
+    /*{
       id: "Email",
       icon: "mail-outline",
       label: "Email",
       hasSubmenu: true,
       submenu: ["Inbox", "Compose", "Sent", "Templates"],
     },
-    {
+    */
+    /*{
       id: "Chat",
       icon: "chatbubbles-outline",
       label: "Chat",
       hasSubmenu: false,
     },
-    {
+    */
+    /*{
       id: "Calendar",
       icon: "calendar-outline",
       label: "Calendar",
       hasSubmenu: true,
       submenu: ["My-Calendar", "Team-Calendar", "Events"],
     },
+    */
     {
       id: "TaskBar",
       icon: "checkbox-outline",

@@ -1,19 +1,20 @@
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { router } from "expo-router";
 import api from "../../src/services/api";
 
 export default function SignUpScreen() {
@@ -56,12 +57,10 @@ export default function SignUpScreen() {
         password,
         confirm_password: confirmPassword,
       });
-      console.log("SUCCESS:", res.data);
-
-      Alert.alert("Success", "Account created successfully!");
-      localStorage.setItem("access_token", res.data.access_token);
-      localStorage.setItem("refresh_token", res.data.refresh_token);
-
+      if (res.status == 200) {
+        Alert.alert("Success", "Account created successfully!");
+        router.push("./login");
+      }
       // Navigate to login or home screen
     } catch (error) {
       console.log("ERROR:", error);
@@ -74,7 +73,7 @@ export default function SignUpScreen() {
   };
 
   const handleLogin = () => {
-    Alert.alert("Login", "Navigating to login screen...");
+    router.push("./login");
   };
 
   return (

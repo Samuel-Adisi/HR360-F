@@ -34,10 +34,11 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       const res = await api.post("/api/login", { email, password });
-      console.log("SUCCESS:", res.data);
 
       localStorage.setItem("access_token", res.data.access_token);
       localStorage.setItem("refresh_token", res.data.refresh_token);
+      localStorage.setItem("username", res.data.user.username);
+
       if (res.status === 200) {
         router.push("./dashboard");
       }

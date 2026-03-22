@@ -1,26 +1,31 @@
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 
-import api from "../src/services/api";
+import api from "../../src/services/api";
 
-const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
+export default function AddEmployeeScreen() {
   const [currentStep, setCurrentStep] = useState(1);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [datePickerDate, setDatePickerDate] = useState(new Date());
+
   const [formData, setFormData] = useState({
-    // Personal Information
     firstName: "",
     lastName: "",
     email: "",
@@ -30,8 +35,6 @@ const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
     city: "",
     state: "",
     zipCode: "",
-
-    // Employment Details
     employeeId: "",
     position: "",
     department: "",
@@ -39,12 +42,8 @@ const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
     employmentType: "Full-time",
     workLocation: "Office",
     managerId: "",
-
-    // Compensation
     salary: "",
     payFrequency: "Bi-weekly",
-
-    // Additional
     emergencyContact: "",
     emergencyPhone: "",
     notes: "",
@@ -54,14 +53,11 @@ const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
 
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
   const validateStep = (step) => {
     const newErrors = {};
-
     if (step === 1) {
       if (!formData.firstName.trim())
         newErrors.firstName = "First name is required";
@@ -81,20 +77,15 @@ const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
       if (!formData.hireDate.trim())
         newErrors.hireDate = "Hire date is required";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleNext = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep((prev) => prev + 1);
-    }
+    if (validateStep(currentStep)) setCurrentStep((prev) => prev + 1);
   };
 
-  const handleBack = () => {
-    setCurrentStep((prev) => prev - 1);
-  };
+  const handleBack = () => setCurrentStep((prev) => prev - 1);
 
   const handleSubmit = async () => {
     if (validateStep(currentStep)) {
@@ -123,61 +114,40 @@ const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
           notes: formData.notes,
         };
 
-        console.log("SUBMITTING DATA:", employeeData);
-
-        // Token is automatically added by interceptor
         const res = await api.post("/api/addEmployee", employeeData);
-
         if (res.status === 201) {
-          console.log("Employee created successfully");
-          Alert.alert("Success", "Employee created successfully!");
-          handleClose();
+          Alert.alert("Success", "Employee created successfully!", [
+            { text: "OK", onPress: () => router.push("./all-employees") },
+          ]);
         }
       } catch (error) {
-        console.log("ERROR DATA:", error.response?.data);
-        console.log("ERROR STATUS:", error.response?.status);
-        console.log("ERROR MESSAGE:", error.message);
-
         const errorMessage = error.response?.data?.errors
           ? JSON.stringify(error.response.data.errors)
           : error.response?.data?.message || "Failed to create employee";
-
         Alert.alert("Error", errorMessage);
       }
     }
   };
 
-  const handleClose = () => {
-    const onClose = () => {
-      return router.replace("../all-employees");
-    };
-    setCurrentStep(1);
-    setFormData({
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      dateOfBirth: "",
-      address: "",
-      city: "",
-      state: "",
-      zipCode: "",
-      employeeId: "",
-      position: "",
-      department: "",
-      hireDate: "",
-      employmentType: "Full-time",
-      workLocation: "Office",
-      managerId: "",
-      salary: "",
-      payFrequency: "Bi-weekly",
-      emergencyContact: "",
-      emergencyPhone: "",
-      notes: "",
-    });
-    setErrors({});
-    onClose();
+  // ── Date picker ──
+  // Called on every slide/change event — always commit the date immediately
+  const onDateChange = (event, selectedDate) => {
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+      if (event.type === "dismissed") return;
+    }
+    if (selectedDate) {
+      setDatePickerDate(selectedDate);
+      const formatted = selectedDate.toISOString().split("T")[0];
+      updateField("dateOfBirth", formatted);
+    }
   };
+
+  const confirmIOSDate = () => setShowDatePicker(false);
+
+  // ─────────────────────────────────────────────────────────────
+  //  STEP INDICATOR
+  // ─────────────────────────────────────────────────────────────
 
   const renderStepIndicator = () => (
     <View style={styles.stepIndicator}>
@@ -226,6 +196,10 @@ const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
     </View>
   );
 
+  // ─────────────────────────────────────────────────────────────
+  //  FIELD RENDERERS
+  // ─────────────────────────────────────────────────────────────
+
   const renderInput = (label, field, options = {}) => (
     <View style={[styles.inputGroup, options.halfWidth && styles.halfWidth]}>
       <Text style={styles.inputLabel}>
@@ -247,8 +221,71 @@ const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
         multiline={options.multiline}
         numberOfLines={options.numberOfLines || 1}
         textAlignVertical={options.multiline ? "top" : "center"}
+        placeholderTextColor="#94A3B8"
       />
       {errors[field] && <Text style={styles.errorText}>{errors[field]}</Text>}
+    </View>
+  );
+
+  const renderDOBField = () => (
+    <View style={styles.inputGroup}>
+      <Text style={styles.inputLabel}>Date of Birth</Text>
+      <TouchableOpacity
+        style={styles.datePickerBtn}
+        onPress={() => {
+          Keyboard.dismiss();
+          setShowDatePicker(true);
+        }}
+        activeOpacity={0.7}
+      >
+        <Ionicons
+          name="calendar-outline"
+          size={18}
+          color="#007AFF"
+          style={{ marginRight: 8 }}
+        />
+        <Text
+          style={[
+            styles.datePickerText,
+            !formData.dateOfBirth && styles.datePickerPlaceholder,
+          ]}
+        >
+          {formData.dateOfBirth || "Select date of birth"}
+        </Text>
+        <Ionicons name="chevron-down" size={16} color="#94A3B8" />
+      </TouchableOpacity>
+
+      {/* iOS inline picker */}
+      {showDatePicker && Platform.OS === "ios" && (
+        <View style={styles.iosPickerCard}>
+          <DateTimePicker
+            value={datePickerDate}
+            mode="date"
+            display="spinner"
+            onChange={onDateChange}
+            maximumDate={new Date()}
+            style={styles.iosPicker}
+            textColor="#1E293B"
+          />
+          <TouchableOpacity
+            style={styles.iosPickerDone}
+            onPress={confirmIOSDate}
+          >
+            <Text style={styles.iosPickerDoneText}>Done</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Android native dialog */}
+      {showDatePicker && Platform.OS === "android" && (
+        <DateTimePicker
+          value={datePickerDate}
+          mode="date"
+          display="default"
+          onChange={onDateChange}
+          maximumDate={new Date()}
+        />
+      )}
     </View>
   );
 
@@ -282,8 +319,17 @@ const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
     </View>
   );
 
+  // ─────────────────────────────────────────────────────────────
+  //  STEP SCREENS
+  // ─────────────────────────────────────────────────────────────
+
   const renderStep1 = () => (
-    <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.stepContent}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      onScrollBeginDrag={Keyboard.dismiss}
+    >
       <Text style={styles.stepTitle}>Personal Information</Text>
       <Text style={styles.stepSubtitle}>Basic employee details</Text>
 
@@ -311,10 +357,7 @@ const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
         placeholder: "+1 (555) 000-0000",
       })}
 
-      {renderInput("Date of Birth", "dateOfBirth", {
-        placeholder: "YYYY-MM-DD",
-        keyboardType: "numeric",
-      })}
+      {renderDOBField()}
 
       <View style={styles.divider} />
 
@@ -331,11 +374,18 @@ const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
         keyboardType: "numeric",
         placeholder: "12345",
       })}
+
+      <View style={{ height: 32 }} />
     </ScrollView>
   );
 
   const renderStep2 = () => (
-    <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.stepContent}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      onScrollBeginDrag={Keyboard.dismiss}
+    >
       <Text style={styles.stepTitle}>Employment Details</Text>
       <Text style={styles.stepSubtitle}>Job and department information</Text>
 
@@ -343,45 +393,46 @@ const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
         placeholder: "Auto-generated or custom",
         autoCapitalize: "characters",
       })}
-
-      {renderInput("Position/Job Title", "position", {
+      {renderInput("Position / Job Title", "position", {
         required: true,
         placeholder: "Senior Developer",
       })}
-
       {renderInput("Department", "department", {
         required: true,
         placeholder: "Technology",
       })}
-
       {renderInput("Hire Date", "hireDate", {
         required: true,
         placeholder: "YYYY-MM-DD",
         keyboardType: "numeric",
       })}
-
       {renderPicker("Employment Type", "employmentType", [
         "Full-time",
         "Part-time",
         "Contract",
         "Intern",
       ])}
-
       {renderPicker("Work Location", "workLocation", [
         "Office",
         "Remote",
         "Hybrid",
       ])}
-
       {renderInput("Reports To (Manager ID)", "managerId", {
         keyboardType: "numeric",
-        placeholder: "Optional - Enter manager ID",
+        placeholder: "Optional — Enter manager ID",
       })}
+
+      <View style={{ height: 32 }} />
     </ScrollView>
   );
 
   const renderStep3 = () => (
-    <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.stepContent}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      onScrollBeginDrag={Keyboard.dismiss}
+    >
       <Text style={styles.stepTitle}>Compensation</Text>
       <Text style={styles.stepSubtitle}>Salary and payment details</Text>
 
@@ -389,7 +440,6 @@ const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
         keyboardType: "numeric",
         placeholder: "75000",
       })}
-
       {renderPicker("Pay Frequency", "payFrequency", [
         "Weekly",
         "Bi-weekly",
@@ -403,23 +453,28 @@ const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
           Compensation information is confidential and securely stored
         </Text>
       </View>
+
+      <View style={{ height: 32 }} />
     </ScrollView>
   );
 
   const renderStep4 = () => (
-    <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.stepContent}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      onScrollBeginDrag={Keyboard.dismiss}
+    >
       <Text style={styles.stepTitle}>Additional Information</Text>
       <Text style={styles.stepSubtitle}>Emergency contacts and notes</Text>
 
       {renderInput("Emergency Contact Name", "emergencyContact", {
         placeholder: "Jane Doe",
       })}
-
       {renderInput("Emergency Contact Phone", "emergencyPhone", {
         keyboardType: "phone-pad",
         placeholder: "+1 (555) 000-0000",
       })}
-
       {renderInput("Additional Notes", "notes", {
         multiline: true,
         numberOfLines: 4,
@@ -427,11 +482,13 @@ const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
       })}
 
       <View style={styles.infoBox}>
-        <Ionicons name="checkmark-circle" size={16} color="#34C759" />
-        <Text style={styles.infoText}>
+        <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+        <Text style={[styles.infoText, { color: "#065F46" }]}>
           Review all information before submitting
         </Text>
       </View>
+
+      <View style={{ height: 32 }} />
     </ScrollView>
   );
 
@@ -450,30 +507,46 @@ const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
     }
   };
 
+  // ─────────────────────────────────────────────────────────────
+  //  RENDER
+  // ─────────────────────────────────────────────────────────────
+
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={false}
-      onRequestClose={handleClose}
-    >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.container}
-      >
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <Ionicons name="close" size={28} color="#666" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Add New Employee</Text>
-            <View style={styles.placeholder} />
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+
+      {/* ── Navbar (matches all-employees style) ── */}
+      <View style={styles.navbar}>
+        <TouchableOpacity
+          style={styles.navBackBtn}
+          onPress={() => router.push("./all-employees")}
+        >
+          <Ionicons name="chevron-back" size={22} color="#334155" />
+        </TouchableOpacity>
+        <View
+          style={styles.navLogo}
+          styles={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View style={styles.logoCircle}>
+            <Ionicons name="person-add" size={18} color="#007AFF" />
           </View>
+          <Text style={styles.logoText}>Add Employee</Text>
+        </View>
+      </View>
 
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.flex}
+        >
           {renderStepIndicator()}
-
           {renderStepContent()}
 
+          {/* ── Footer ── */}
           <View style={styles.footer}>
             {currentStep > 1 && (
               <TouchableOpacity
@@ -484,7 +557,6 @@ const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
                 <Text style={styles.secondaryButtonText}>Back</Text>
               </TouchableOpacity>
             )}
-
             <TouchableOpacity
               style={[
                 styles.primaryButton,
@@ -500,208 +572,198 @@ const AddEmployeeScreen = ({ visible, onClose, onSubmit }) => {
               )}
             </TouchableOpacity>
           </View>
-        </SafeAreaView>
-      </KeyboardAvoidingView>
-    </Modal>
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
+    </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  safeArea: {
-    flex: 1,
-  },
-  header: {
+  safeArea: { flex: 1, backgroundColor: "#F8FAFC" },
+  flex: { flex: 1 },
+
+  // ── Navbar ──
+  navbar: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    borderBottomColor: "#F1F5F9",
   },
-  closeButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#222",
-  },
-  placeholder: {
+  navBackBtn: {
     width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
   },
+  navLogo: { flexDirection: "row", alignItems: "center", gap: 8 },
+  logoCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  logoText: { fontSize: 15, fontWeight: "800", color: "#1E293B" },
+  navAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: "#E2E8F0",
+  },
+
+  // ── Step Indicator ──
   stepIndicator: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
     paddingHorizontal: 20,
-    paddingVertical: 24,
-    paddingBottom: 16,
+    paddingVertical: 20,
+    paddingBottom: 14,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
   },
-  stepItem: {
-    alignItems: "center",
-    flex: 1,
-  },
+  stepItem: { alignItems: "center", flex: 1 },
   stepCircle: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#F1F5F9",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#e0e0e0",
+    borderColor: "#E2E8F0",
     marginBottom: 6,
   },
-  stepCircleActive: {
-    backgroundColor: "#007AFF",
-    borderColor: "#007AFF",
-  },
-  stepCircleComplete: {
-    backgroundColor: "#34C759",
-    borderColor: "#34C759",
-  },
-  stepNumber: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#999",
-  },
-  stepNumberActive: {
-    color: "#fff",
-  },
-  stepLabel: {
-    fontSize: 11,
-    color: "#999",
-    textAlign: "center",
-  },
-  stepLabelActive: {
-    color: "#007AFF",
-    fontWeight: "500",
-  },
+  stepCircleActive: { backgroundColor: "#007AFF", borderColor: "#007AFF" },
+  stepCircleComplete: { backgroundColor: "#10B981", borderColor: "#10B981" },
+  stepNumber: { fontSize: 14, fontWeight: "600", color: "#94A3B8" },
+  stepNumberActive: { color: "#fff" },
+  stepLabel: { fontSize: 11, color: "#94A3B8", textAlign: "center" },
+  stepLabelActive: { color: "#007AFF", fontWeight: "600" },
   stepLine: {
     height: 2,
-    backgroundColor: "#e0e0e0",
+    backgroundColor: "#E2E8F0",
     position: "absolute",
     top: 15,
     left: "50%",
     right: "-50%",
     zIndex: -1,
   },
-  stepLineActive: {
-    backgroundColor: "#34C759",
-  },
-  stepContent: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
+  stepLineActive: { backgroundColor: "#10B981" },
+
+  // ── Form ──
+  stepContent: { flex: 1, paddingHorizontal: 20, paddingTop: 20 },
   stepTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#222",
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#1E293B",
     marginBottom: 4,
   },
-  stepSubtitle: {
-    fontSize: 14,
-    color: "#888",
-    marginBottom: 24,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  halfWidth: {
-    flex: 1,
-  },
+  stepSubtitle: { fontSize: 13, color: "#94A3B8", marginBottom: 24 },
+  inputGroup: { marginBottom: 18 },
+  halfWidth: { flex: 1 },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
-    color: "#444",
-    marginBottom: 8,
+    color: "#475569",
+    marginBottom: 7,
   },
-  required: {
-    color: "#FF3B30",
-  },
+  required: { color: "#EF4444" },
   input: {
-    backgroundColor: "#f8f8f8",
+    backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: "#e0e0e0",
+    borderColor: "#E2E8F0",
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    color: "#222",
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    fontSize: 14,
+    color: "#1E293B",
   },
-  inputError: {
-    borderColor: "#FF3B30",
-    backgroundColor: "#FFF5F5",
-  },
-  textArea: {
-    minHeight: 100,
-    paddingTop: 14,
-  },
-  errorText: {
-    fontSize: 12,
-    color: "#FF3B30",
-    marginTop: 4,
-  },
-  row: {
+  inputError: { borderColor: "#EF4444", backgroundColor: "#FFF5F5" },
+  textArea: { minHeight: 100, paddingTop: 13 },
+  errorText: { fontSize: 12, color: "#EF4444", marginTop: 4 },
+  row: { flexDirection: "row", gap: 12 },
+  divider: { height: 1, backgroundColor: "#F1F5F9", marginVertical: 18 },
+
+  // ── Date Picker ──
+  datePickerBtn: {
     flexDirection: "row",
-    gap: 12,
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
   },
-  divider: {
-    height: 1,
-    backgroundColor: "#e0e0e0",
-    marginVertical: 20,
+  datePickerText: { flex: 1, fontSize: 14, color: "#1E293B" },
+  datePickerPlaceholder: { color: "#94A3B8" },
+  iosPickerCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    marginTop: 8,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  pickerContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
+  iosPicker: { height: 200 },
+  iosPickerDone: {
+    alignItems: "flex-end",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+    backgroundColor: "#F8FAFC",
   },
+  iosPickerDoneText: { fontSize: 15, fontWeight: "700", color: "#007AFF" },
+
+  // ── Picker Chips ──
+  pickerContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   pickerOption: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 9,
     borderRadius: 20,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#F1F5F9",
     borderWidth: 1,
-    borderColor: "#e0e0e0",
+    borderColor: "#E2E8F0",
   },
-  pickerOptionActive: {
-    backgroundColor: "#007AFF",
-    borderColor: "#007AFF",
-  },
-  pickerOptionText: {
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "500",
-  },
-  pickerOptionTextActive: {
-    color: "#fff",
-  },
+  pickerOptionActive: { backgroundColor: "#007AFF", borderColor: "#007AFF" },
+  pickerOptionText: { fontSize: 13, color: "#64748B", fontWeight: "600" },
+  pickerOptionTextActive: { color: "#fff" },
+
+  // ── Info Box ──
   infoBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F0F9FF",
+    backgroundColor: "#EFF6FF",
     borderRadius: 12,
     padding: 14,
     marginTop: 8,
     gap: 10,
   },
-  infoText: {
-    flex: 1,
-    fontSize: 13,
-    color: "#007AFF",
-    lineHeight: 18,
-  },
+  infoText: { flex: 1, fontSize: 13, color: "#1D4ED8", lineHeight: 18 },
+
+  // ── Footer ──
   footer: {
     flexDirection: "row",
     gap: 12,
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
+    borderTopColor: "#F1F5F9",
     backgroundColor: "#fff",
   },
   secondaryButton: {
@@ -709,34 +771,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f0f0f0",
-    paddingVertical: 16,
+    backgroundColor: "#EFF6FF",
+    paddingVertical: 15,
     borderRadius: 12,
     gap: 6,
+    borderWidth: 1,
+    borderColor: "#93C5FD",
   },
-  secondaryButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#007AFF",
-  },
+  secondaryButtonText: { fontSize: 15, fontWeight: "700", color: "#007AFF" },
   primaryButton: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#007AFF",
-    paddingVertical: 16,
+    paddingVertical: 15,
     borderRadius: 12,
     gap: 6,
   },
-  primaryButtonFull: {
-    flex: 2,
-  },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#fff",
-  },
+  primaryButtonFull: { flex: 2 },
+  primaryButtonText: { fontSize: 15, fontWeight: "700", color: "#fff" },
 });
-
-export default AddEmployeeScreen;

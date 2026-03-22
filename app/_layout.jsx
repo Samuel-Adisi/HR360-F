@@ -1,16 +1,15 @@
 import { Slot, Stack } from "expo-router";
 
 export const unstable_settings = {
-  anchor: '(clocking)',
+  anchor: "(clocking)",
 };
 
 export default function RootLayout() {
   return (
-    <Stack>
-      <Slot/>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Slot />
       <Stack.Screen name="(clocking)" options={{ headerShown: false }} />
       <Stack.Screen name="(admin)" options={{ headerShown: false }} />
     </Stack>
-
   );
 }

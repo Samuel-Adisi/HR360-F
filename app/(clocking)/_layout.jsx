@@ -1,41 +1,29 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
+import React from "react";
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#00D9A5',
+        tabBarActiveTintColor: "#00D9A5",
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: "#fff",
           borderTopWidth: 1,
-          borderTopColor: '#e0e0e0',
+          borderTopColor: "#e0e0e0",
         },
-      }}>
+      }}
+    >
       <Tabs.Screen
         name="clocking"
         options={{
-          title: 'Clocking',
+          title: "Clocking",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? 'time' : 'time-outline'} 
-              size={28} 
-              color={color} 
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="employee"
-        options={{
-          title: 'Employee Management',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? 'person' : 'person-outline'} 
-              size={28} 
-              color={color} 
+            <Ionicons
+              name={focused ? "time" : "time-outline"}
+              size={28}
+              color={color}
             />
           ),
         }}
