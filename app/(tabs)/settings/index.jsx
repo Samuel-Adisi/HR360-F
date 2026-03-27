@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
+import { sansText, serifText } from "../../../src/theme/fonts";
 import { SCREEN_BG } from "../../../src/theme/navigationTheme";
 
 export default function SettingsHome() {
@@ -26,10 +27,12 @@ export default function SettingsHome() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Settings</Text>
-      <Text style={styles.body}>Account and app preferences go here.</Text>
+      <Text style={[styles.title, serifText()]}>Settings</Text>
+      <Text style={[styles.body, sansText()]}>
+        Account and app preferences go here.
+      </Text>
       <TouchableOpacity style={styles.outline} onPress={signOut}>
-        <Text style={styles.outlineText}>Sign out</Text>
+        <Text style={[styles.outlineText, sansText()]}>Sign out</Text>
       </TouchableOpacity>
     </View>
   );

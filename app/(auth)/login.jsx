@@ -16,7 +16,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import api from "../../src/services/api";
+import { sansText, serifText } from "../../src/theme/fonts";
 import { BRAND_TEAL } from "../../src/theme/navigationTheme";
+import { shadows } from "../../src/theme/shadows";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -51,10 +53,12 @@ export default function LoginScreen() {
         style={styles.flex}
       >
         <View style={styles.card}>
-          <Text style={styles.title}>HR360</Text>
-          <Text style={styles.subtitle}>Sign in to continue</Text>
+          <Text style={[styles.title, serifText()]}>HR360</Text>
+          <Text style={[styles.subtitle, sansText()]}>
+            Sign in to continue
+          </Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, sansText()]}
             placeholder="Email"
             autoCapitalize="none"
             keyboardType="email-address"
@@ -63,7 +67,7 @@ export default function LoginScreen() {
           />
           <View style={styles.passwordRow}>
             <TextInput
-              style={[styles.input, styles.passwordInput]}
+              style={[styles.input, styles.passwordInput, sansText()]}
               placeholder="Password"
               secureTextEntry={!showPassword}
               value={password}
@@ -89,11 +93,11 @@ export default function LoginScreen() {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.primaryText}>Sign in</Text>
+              <Text style={[styles.primaryText, sansText()]}>Sign in</Text>
             )}
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push("/signup")}>
-            <Text style={styles.link}>Create an account</Text>
+            <Text style={[styles.link, sansText()]}>Create an account</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -109,10 +113,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 24,
     gap: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 2,
+    ...shadows.loginCard,
   },
   title: { fontSize: 28, fontWeight: "700", textAlign: "center" },
   subtitle: {
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
   passwordInput: { paddingRight: 44 },
   eye: { position: "absolute", right: 10, top: 12 },
   primary: {
-    backgroundColor: "#2563eb",
+    backgroundColor: BRAND_TEAL,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",

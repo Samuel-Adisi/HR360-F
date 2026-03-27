@@ -17,7 +17,13 @@ const mockJsonResponse = (config, { data, status = 200 } = {}) => ({
   request: {},
 });
 
-const MOCK_USER = { username: "demo_user" };
+const MOCK_USER = {
+  username: "demo_user",
+  full_name: "Demo User",
+  /** Shown on dashboard when set; omit or null to use initials */
+  avatar:
+    "https://ui-avatars.com/api/?name=Demo+User&size=128&background=0f766e&color=fff",
+};
 
 const MOCK_DEPARTMENTS = [
   { id: 1, name: "Engineering" },

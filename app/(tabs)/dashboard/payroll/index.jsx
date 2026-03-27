@@ -1,12 +1,13 @@
 import { StyleSheet, Text, View } from "react-native";
 
+import { sansText, serifText } from "../../../../src/theme/fonts";
 import { SCREEN_BG } from "../../../../src/theme/navigationTheme";
 
 export default function PayrollHome() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Payroll</Text>
-      <Text style={styles.body}>
+      <Text style={[styles.title, serifText()]}>Payroll</Text>
+      <Text style={[styles.body, sansText()]}>
         Reach this screen from Dashboard when you wire navigation (e.g. a Payroll button).
       </Text>
     </View>

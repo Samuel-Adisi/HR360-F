@@ -1,5 +1,7 @@
 import { Stack } from "expo-router";
 
+import { headerTitleStyle } from "../../../src/theme/fonts";
+
 export default function SettingsStack() {
   return (
     <Stack
@@ -8,7 +10,7 @@ export default function SettingsStack() {
         headerBackTitle: "Back",
         headerStyle: { backgroundColor: "#FFFFFF" },
         headerTintColor: "#0F172A",
-        headerTitleStyle: { color: "#0F172A", fontWeight: "600" },
+        headerTitleStyle: { ...headerTitleStyle, color: "#0F172A" },
         headerShadowVisible: false,
         contentStyle: { backgroundColor: "#F8FAFC", paddingBottom: 100 },
       }}

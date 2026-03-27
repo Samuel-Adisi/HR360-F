@@ -1,24 +1,29 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
-import {
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
-  ArrowRightIcon,
-  BanknotesIcon,
-  CalendarDaysIcon,
-  ChartBarSquareIcon,
-  ClockIcon,
-  UsersIcon,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
+import {
+    ArrowRightIcon,
+    BanknotesIcon,
+    CalendarDaysIcon,
+    ChartBarSquareIcon,
+    ClockIcon,
+    UsersIcon,
 } from "react-native-heroicons/outline";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { ProfileAvatar } from "../../../src/components/ProfileAvatar";
+import { monoText, sansText, serifText } from "../../../src/theme/fonts";
+import { shadows } from "../../../src/theme/shadows";
 
 const ACCENT = "#0F766E";
 const ACCENT_DARK = "#0D5C56";
@@ -34,20 +39,52 @@ function formatDate() {
 export default function DashboardHome() {
   const router = useRouter();
   const [username, setUsername] = useState("");
+  const [avatarUri, setAvatarUri] = useState(null);
+  const [nameHint, setNameHint] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
   const loadUser = useCallback(async () => {
     try {
       const name = await AsyncStorage.getItem("username");
       setUsername(name || "");
+      setNameHint(name || "");
+      const raw = await AsyncStorage.getItem("user");
+      if (raw) {
+        try {
+          const u = JSON.parse(raw);
+          const pic =
+            u.avatar ||
+            u.photo ||
+            u.profile_picture ||
+            u.profilePicture ||
+            null;
+          setAvatarUri(typeof pic === "string" && pic.length ? pic : null);
+          const hint =
+            u.full_name ||
+            u.fullName ||
+            [u.first_name, u.last_name].filter(Boolean).join(" ") ||
+            u.name ||
+            name ||
+            "";
+          setNameHint(String(hint));
+        } catch {
+          setAvatarUri(null);
+        }
+      } else {
+        setAvatarUri(null);
+      }
     } catch {
       setUsername("");
+      setNameHint("");
+      setAvatarUri(null);
     }
   }, []);
 
-  useEffect(() => {
-    loadUser();
-  }, [loadUser]);
+  useFocusEffect(
+    useCallback(() => {
+      loadUser();
+    }, [loadUser])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -69,11 +106,23 @@ export default function DashboardHome() {
           style={styles.heroGradient}
         >
           <SafeAreaView edges={["top"]} style={styles.heroSafe}>
-            <Text style={styles.kicker}>Today</Text>
-            <Text style={styles.heroTitle}>
-              {username ? `Hi, ${username}` : "Welcome back"}
-            </Text>
-            <Text style={styles.heroSubtitle}>{formatDate()}</Text>
+            <View style={styles.heroTopRow}>
+              <View style={styles.heroTextColumn}>
+                <Text style={[styles.kicker, sansText()]}>Today</Text>
+                <Text style={[styles.heroTitle, serifText()]}>
+                  {username ? `Hi, ${username}` : "Welcome back"}
+                </Text>
+                <Text style={[styles.heroSubtitle, sansText()]}>
+                  {formatDate()}
+                </Text>
+              </View>
+              <ProfileAvatar
+                uri={avatarUri}
+                nameHint={nameHint || username}
+                outerSize={56}
+                onPress={() => router.push("/settings")}
+              />
+            </View>
           </SafeAreaView>
         </LinearGradient>
 
@@ -99,7 +148,7 @@ export default function DashboardHome() {
             />
           </View>
 
-          <Text style={styles.sectionTitle}>Quick actions</Text>
+          <Text style={[styles.sectionTitle, serifText()]}>Quick actions</Text>
           <View style={styles.actionsGrid}>
             <ActionTile
               title="Employees"
@@ -128,7 +177,7 @@ export default function DashboardHome() {
             />
           </View>
 
-          <Text style={styles.sectionTitle}>Reminders</Text>
+          <Text style={[styles.sectionTitle, serifText()]}>Reminders</Text>
           <View style={styles.card}>
             <ReminderRow title="Connect your calendar" onPress={() => {}} />
             <View style={styles.divider} />
@@ -149,9 +198,9 @@ function StatCard({ label, value, hint, icon }) {
   return (
     <View style={styles.statCard}>
       <View style={styles.statIconWrap}>{icon}</View>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statHint}>{hint}</Text>
+      <Text style={[styles.statValue, monoText()]}>{value}</Text>
+      <Text style={[styles.statLabel, sansText()]}>{label}</Text>
+      <Text style={[styles.statHint, sansText()]}>{hint}</Text>
     </View>
   );
 }
@@ -177,10 +226,18 @@ function ActionTile({ title, subtitle, icon, onPress, muted = false }) {
       >
         {icon}
       </LinearGradient>
-      <Text style={[styles.actionTitle, muted && styles.actionTitleMuted]}>
+      <Text
+        style={[
+          styles.actionTitle,
+          sansText(),
+          muted && styles.actionTitleMuted,
+        ]}
+      >
         {title}
       </Text>
-      <Text style={[styles.actionSub, muted && styles.actionSubMuted]}>
+      <Text
+        style={[styles.actionSub, sansText(), muted && styles.actionSubMuted]}
+      >
         {subtitle}
       </Text>
     </Pressable>
@@ -193,7 +250,7 @@ function ReminderRow({ title, onPress }) {
       onPress={onPress}
       style={({ pressed }) => [styles.reminderRow, pressed && { opacity: 0.85 }]}
     >
-      <Text style={styles.reminderText}>{title}</Text>
+      <Text style={[styles.reminderText, sansText()]}>{title}</Text>
       <ArrowRightIcon size={18} color="#64748B" />
     </Pressable>
   );
@@ -213,6 +270,17 @@ const styles = StyleSheet.create({
   heroSafe: {
     paddingHorizontal: 20,
     paddingTop: 8,
+  },
+  heroTopRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 16,
+  },
+  heroTextColumn: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: 4,
   },
   kicker: {
     fontSize: 13,
@@ -253,11 +321,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    ...shadows.statCard,
   },
   statValue: {
     fontSize: 22,

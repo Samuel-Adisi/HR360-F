@@ -1,17 +1,18 @@
 import { router } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
+import { sansText, serifText } from "../../../src/theme/fonts";
 import { BRAND_TEAL, SCREEN_BG } from "../../../src/theme/navigationTheme";
 
 export default function AddEmployeePlaceholder() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Add</Text>
-      <Text style={styles.body}>
+      <Text style={[styles.title, serifText()]}>Add</Text>
+      <Text style={[styles.body, sansText()]}>
         Quick-add flow from the + button — wire forms when you are ready.
       </Text>
       <TouchableOpacity style={styles.btn} onPress={() => router.back()}>
-        <Text style={styles.btnText}>Close</Text>
+        <Text style={[styles.btnText, sansText()]}>Close</Text>
       </TouchableOpacity>
     </View>
   );

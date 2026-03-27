@@ -1,12 +1,13 @@
 import { StyleSheet, Text, View } from "react-native";
 
+import { sansText, serifText } from "../../../src/theme/fonts";
 import { SCREEN_BG } from "../../../src/theme/navigationTheme";
 
 export default function EmployeesHome() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Employees</Text>
-      <Text style={styles.body}>
+      <Text style={[styles.title, serifText()]}>Employees</Text>
+      <Text style={[styles.body, sansText()]}>
         List, add, and [id] screens will live in this stack — see FEATURES_INVENTORY.
                 </Text>
     </View>

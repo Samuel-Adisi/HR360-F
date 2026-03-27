@@ -2,18 +2,19 @@ import { router } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { sansText, serifText } from "../../src/theme/fonts";
 import { BRAND_TEAL } from "../../src/theme/navigationTheme";
 
 export default function SignupScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.box}>
-        <Text style={styles.title}>Sign up</Text>
-        <Text style={styles.hint}>
+        <Text style={[styles.title, serifText()]}>Sign up</Text>
+        <Text style={[styles.hint, sansText()]}>
           Registration will be wired in the new app. Use Sign in for now.
         </Text>
         <TouchableOpacity style={styles.btn} onPress={() => router.back()}>
-          <Text style={styles.btnText}>Back to login</Text>
+          <Text style={[styles.btnText, sansText()]}>Back to login</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

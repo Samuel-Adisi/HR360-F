@@ -10,6 +10,8 @@ import {
 import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { shadows } from "../theme/shadows";
+
 const ICON_SIZE = 22;
 const ICON_ACTIVE = "#FFFFFF";
 const ICON_INACTIVE = "#64748B";
@@ -112,11 +114,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingVertical: 10,
     paddingHorizontal: 6,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    elevation: 12,
+    ...shadows.floatingTabPill,
   },
   tabHit: {
     flex: 1,
@@ -141,10 +139,6 @@ const styles = StyleSheet.create({
     backgroundColor: FAB_GREEN,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    elevation: 10,
+    ...shadows.floatingFab,
   },
 });
