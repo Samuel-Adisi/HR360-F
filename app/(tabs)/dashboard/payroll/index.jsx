@@ -1,13 +1,13 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { SCREEN_BG } from "../../../src/theme/navigationTheme";
+import { SCREEN_BG } from "../../../../src/theme/navigationTheme";
 
-export default function AttendanceHome() {
+export default function PayrollHome() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Attendance</Text>
+      <Text style={styles.title}>Payroll</Text>
       <Text style={styles.body}>
-        Schedules and time tracking will live here as we build the new UI.
+        Reach this screen from Dashboard when you wire navigation (e.g. a Payroll button).
       </Text>
     </View>
   );

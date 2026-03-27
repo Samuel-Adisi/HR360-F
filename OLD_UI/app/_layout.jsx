@@ -1,55 +1,54 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider } from "@react-navigation/native";
+import {
+  DefaultTheme,
+  DarkTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
 import { Stack, useRouter, useSegments } from "expo-router";
-import { StatusBar } from "expo-status-bar";
+import { useColorScheme } from "react-native";
 import { useEffect, useState } from "react";
-
-import { AppNavigationTheme } from "../src/theme/navigationTheme";
 
 const queryClient = new QueryClient();
 
 function AuthGate() {
   const router = useRouter();
   const segments = useSegments();
-  const [ready, setReady] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-
-    const run = async () => {
+    const checkAuth = async () => {
       try {
         const token = await AsyncStorage.getItem("access_token");
-        const inAuth = segments[0] === "(auth)";
-        if (!token && !inAuth) {
+        const inAuthGroup = segments[0] === "(auth)";
+
+        if (!token && !inAuthGroup) {
           router.replace("/login");
         }
-      } catch {
+      } catch (e) {
         router.replace("/login");
       } finally {
-        if (!cancelled) setReady(true);
+        setIsReady(true);
       }
     };
 
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [segments, router]);
+    checkAuth();
+  }, [segments]);
 
-  if (!ready) return null;
+  if (!isReady) return null;
+
   return null;
 }
 
 export default function RootLayout() {
+  const scheme = useColorScheme();
+  const theme = scheme === "dark" ? DarkTheme : DefaultTheme;
   return (
-    <ThemeProvider value={AppNavigationTheme}>
-      <StatusBar style="dark" />
+    <ThemeProvider value={theme}>
       <QueryClientProvider client={queryClient}>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
+        <Stack>
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         </Stack>
         <AuthGate />
       </QueryClientProvider>

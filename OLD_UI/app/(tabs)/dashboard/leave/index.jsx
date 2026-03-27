@@ -846,12 +846,13 @@ const DetailModal = ({
   onReject,
   isManager,
 }) => {
+  const [rejectNote, setRejectNote] = useState("");
+  const [showRejectInput, setShowRejectInput] = useState(false);
+
   if (!r) return null;
   const sm = STATUS_META[r.status];
   const ltm = LEAVE_TYPE_META[r.leave_type] || LEAVE_TYPE_META.annual;
   const color = avatarColor(r.employee_name);
-  const [rejectNote, setRejectNote] = useState("");
-  const [showRejectInput, setShowRejectInput] = useState(false);
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>

@@ -622,7 +622,7 @@ export default function UploadDocumentScreen() {
           <View style={s.headerLeft}>
             <Text style={s.pageTitle}>Upload Document</Text>
             <Text style={s.pageSub}>
-              Add a document to an employee's record
+              Add a document to an employee&apos;s record
             </Text>
           </View>
           {isFormDirty && (

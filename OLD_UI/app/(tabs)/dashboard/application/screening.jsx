@@ -1920,7 +1920,7 @@ const DetailModal = ({ app, onClose, onStatusChange }) => {
                 <Ionicons name="sparkles-outline" size={48} color="#CBD5E1" />
                 <Text style={dm.noResultTxt}>Not yet screened</Text>
                 <Text style={dm.noResultSub}>
-                  Tap "Screen" to run Gemini AI analysis on this application
+                  Tap &quot;Screen&quot; to run Gemini AI analysis on this application
                 </Text>
               </View>
             )}

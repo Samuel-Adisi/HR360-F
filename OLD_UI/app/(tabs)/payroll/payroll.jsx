@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FlatList,
   Image,
@@ -1094,6 +1094,29 @@ const st = StyleSheet.create({
 //  MAIN SCREEN
 // ─────────────────────────────────────────────────────────────
 export default function PayrollScreen() {
+  useEffect(() => {
+    // #region agent log
+    fetch(
+      "http://127.0.0.1:7435/ingest/573e11c3-4929-47fe-8a5b-0b9558470170",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Debug-Session-Id": "021120",
+        },
+        body: JSON.stringify({
+          sessionId: "021120",
+          location: "app/(tabs)/payroll/payroll.jsx:PayrollScreenMount",
+          message: "Payroll screen mounted",
+          hypothesisId: "H5_payrollScreenMounted",
+          data: { routeKey: "payroll/index" },
+          timestamp: Date.now(),
+        }),
+      },
+    ).catch(() => {});
+    // #endregion
+  }, []);
+
   const [data, setData] = useState(INITIAL_DATA);
   const [selected, setSelected] = useState(null); // detail modal
   const [activeFilter, setFilter] = useState("All");

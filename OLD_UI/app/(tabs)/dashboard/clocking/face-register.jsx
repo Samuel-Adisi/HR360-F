@@ -179,7 +179,7 @@ const analyzeNative = async (uri) => {
   let variance = 0;
   try {
     const b64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
+      encoding: "base64",
     });
     // Sample 400 evenly-spaced characters and compute sequential differences
     const step = Math.max(1, Math.floor(b64.length / 400));

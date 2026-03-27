@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Dimensions,
@@ -18,6 +18,29 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const { width } = Dimensions.get("window");
 
 export default function SettingsScreen() {
+  useEffect(() => {
+    // #region agent log
+    fetch(
+      "http://127.0.0.1:7435/ingest/573e11c3-4929-47fe-8a5b-0b9558470170",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Debug-Session-Id": "021120",
+        },
+        body: JSON.stringify({
+          sessionId: "021120",
+          location: "app/(tabs)/settings/settings.jsx:SettingsScreenMount",
+          message: "Settings screen mounted",
+          hypothesisId: "H6_settingsScreenMounted",
+          data: { routeKey: "settings/index" },
+          timestamp: Date.now(),
+        }),
+      },
+    ).catch(() => {});
+    // #endregion
+  }, []);
+
   // Notification States
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);

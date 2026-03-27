@@ -436,7 +436,7 @@ const AddLeaveRequestScreen = ({ navigation }) => {
             />
             <Text style={styles.infoText}>
               Your leave request will be sent to your manager for approval.
-              You'll receive a notification once it's reviewed.
+              You&apos;ll receive a notification once it&apos;s reviewed.
             </Text>
           </View>
         </ScrollView>

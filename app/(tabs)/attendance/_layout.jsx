@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 
-export default function EmployeesStack() {
+export default function AttendanceStack() {
   return (
     <Stack
       screenOptions={{
@@ -13,8 +13,7 @@ export default function EmployeesStack() {
         contentStyle: { backgroundColor: "#F8FAFC", paddingBottom: 100 },
       }}
     >
-      <Stack.Screen name="index" options={{ title: "Employees" }} />
-      <Stack.Screen name="add" options={{ title: "Add", presentation: "modal" }} />
+      <Stack.Screen name="index" options={{ title: "Attendance" }} />
     </Stack>
   );
 }
