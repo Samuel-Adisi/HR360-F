@@ -18,7 +18,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import api from "../../src/services/api";
 import { sansText, serifText } from "../../src/theme/fonts";
 import { BRAND_TEAL } from "../../src/theme/navigationTheme";
-import { shadows } from "../../src/theme/shadows";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -113,7 +112,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 24,
     gap: 12,
-    ...shadows.loginCard,
   },
   title: { fontSize: 28, fontWeight: "700", textAlign: "center" },
   subtitle: {

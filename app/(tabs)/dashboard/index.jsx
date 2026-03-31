@@ -1,29 +1,35 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect } from "@react-native-async-storage/async-storage"; // wait, usually @react-navigation/native 
+import { useFocusEffect as useNavFocus } from "@react-navigation/native";
+// I will just use standard imports
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import {
-    ArrowRightIcon,
-    BanknotesIcon,
-    CalendarDaysIcon,
-    ChartBarSquareIcon,
-    ClockIcon,
-    UsersIcon,
+  ArrowRightIcon,
+  BanknotesIcon,
+  CalendarDaysIcon,
+  ChartBarSquareIcon,
+  ClockIcon,
+  UsersIcon,
+  MegaphoneIcon,
+  BellIcon,
 } from "react-native-heroicons/outline";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Location from "expo-location";
+import { useCameraPermissions } from "expo-camera";
 
 import { ProfileAvatar } from "../../../src/components/ProfileAvatar";
 import { monoText, sansText, serifText } from "../../../src/theme/fonts";
-import { shadows } from "../../../src/theme/shadows";
 
 const ACCENT = "#0F766E";
 const ACCENT_DARK = "#0D5C56";
@@ -42,6 +48,9 @@ export default function DashboardHome() {
   const [avatarUri, setAvatarUri] = useState(null);
   const [nameHint, setNameHint] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [isClockingIn, setIsClockingIn] = useState(false);
 
   const loadUser = useCallback(async () => {
     try {
@@ -53,11 +62,7 @@ export default function DashboardHome() {
         try {
           const u = JSON.parse(raw);
           const pic =
-            u.avatar ||
-            u.photo ||
-            u.profile_picture ||
-            u.profilePicture ||
-            null;
+            u.avatar || u.photo || u.profile_picture || u.profilePicture || null;
           setAvatarUri(typeof pic === "string" && pic.length ? pic : null);
           const hint =
             u.full_name ||
@@ -80,7 +85,7 @@ export default function DashboardHome() {
     }
   }, []);
 
-  useFocusEffect(
+  useNavFocus(
     useCallback(() => {
       loadUser();
     }, [loadUser])
@@ -89,8 +94,38 @@ export default function DashboardHome() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadUser();
-    setRefreshing(false);
+    setTimeout(() => setRefreshing(false), 800);
   }, [loadUser]);
+
+  const handleClockInOut = async () => {
+    setIsClockingIn(true);
+    let { status: locStatus } = await Location.requestForegroundPermissionsAsync();
+    if (locStatus !== "granted") {
+      Alert.alert("Permission denied", "Location permission is required to clock in.");
+      setIsClockingIn(false);
+      return;
+    }
+
+    if (!cameraPermission?.granted) {
+      const camStatus = await requestCameraPermission();
+      if (!camStatus.granted) {
+        Alert.alert("Permission denied", "Camera permission is required to verify identity.");
+        setIsClockingIn(false);
+        return;
+      }
+    }
+
+    // Mock accessing location
+    try {
+      await Location.getCurrentPositionAsync({});
+      // Mock clock-in success
+      Alert.alert("Success", "You have successfully clocked in for the day.");
+    } catch (e) {
+      Alert.alert("Error", "Could not fetch location.");
+    } finally {
+      setIsClockingIn(false);
+    }
+  };
 
   return (
     <View style={styles.screen}>
@@ -116,36 +151,94 @@ export default function DashboardHome() {
                   {formatDate()}
                 </Text>
               </View>
-              <ProfileAvatar
-                uri={avatarUri}
-                nameHint={nameHint || username}
-                outerSize={56}
-                onPress={() => router.push("/settings")}
-              />
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+                <Pressable 
+                  onPress={() => router.push("/notifications")}
+                  style={({ pressed }) => [{ position: "relative" }, pressed && { opacity: 0.7 }]}
+                >
+                  <BellIcon size={24} color="#0F172A" />
+                  <View style={{ position: "absolute", top: 0, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: "#E11D48" }} />
+                </Pressable>
+                <ProfileAvatar
+                  uri={avatarUri}
+                  nameHint={nameHint || username}
+                  outerSize={48}
+                  onPress={() => router.push("/settings")}
+                />
+              </View>
             </View>
+
+            {/* Quick Clock-In Widget */}
+            <Pressable 
+              style={({pressed}) => [styles.clockInWidget, pressed && { opacity: 0.9 }]}
+              onPress={handleClockInOut}
+              disabled={isClockingIn}
+            >
+              <LinearGradient
+                colors={[ACCENT, ACCENT_DARK]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.clockInGradient}
+              >
+                <View style={styles.clockInContent}>
+                  <View>
+                    <Text style={[styles.clockInTitle, sansText()]}>
+                      {isClockingIn ? "Verifying..." : "Clock In"}
+                    </Text>
+                    <Text style={[styles.clockInSub, sansText()]}>
+                      Tap to record attendance
+                    </Text>
+                  </View>
+                  <View style={styles.clockIconWrap}>
+                    <ClockIcon size={24} color={ACCENT} />
+                  </View>
+                </View>
+              </LinearGradient>
+            </Pressable>
           </SafeAreaView>
         </LinearGradient>
 
         <View style={styles.sheet}>
           <View style={styles.statsRow}>
+            {/* Mocked Data */}
             <StatCard
               label="Present"
-              value="—"
+              value="45"
               hint="Today"
               icon={<UsersIcon size={20} color={ACCENT} />}
             />
             <StatCard
               label="On leave"
-              value="—"
+              value="3"
               hint="This week"
               icon={<CalendarDaysIcon size={20} color={ACCENT} />}
             />
             <StatCard
               label="Pending"
-              value="—"
-              hint="Actions"
+              value="12"
+              hint="Requests"
               icon={<ClockIcon size={20} color={ACCENT} />}
             />
+          </View>
+
+          {/* Announcements & Leave Balance Grid */}
+          <View style={styles.infoCardsRow}>
+            <View style={styles.infoCard}>
+              <View style={styles.infoCardHeader}>
+                <MegaphoneIcon size={18} color="#0EA5E9" />
+                <Text style={[styles.infoCardTitle, sansText()]}>Announcements</Text>
+              </View>
+              <Text style={[styles.infoCardBody, sansText()]}>Company Townhall this Friday at 3PM.</Text>
+            </View>
+
+            <View style={styles.infoCard}>
+              <View style={styles.infoCardHeader}>
+                <CalendarDaysIcon size={18} color="#F59E0B" />
+                <Text style={[styles.infoCardTitle, sansText()]}>My Leave</Text>
+              </View>
+              <Text style={[styles.infoCardLargeValue, monoText()]}>14 <Text style={styles.infoCardSmallText}>days</Text></Text>
+              <Text style={[styles.infoCardSub, sansText()]}>Remaining PTO</Text>
+            </View>
           </View>
 
           <Text style={[styles.sectionTitle, serifText()]}>Quick actions</Text>
@@ -217,9 +310,7 @@ function ActionTile({ title, subtitle, icon, onPress, muted = false }) {
       ]}
     >
       <LinearGradient
-        colors={
-          muted ? ["#F1F5F9", "#E2E8F0"] : [ACCENT, ACCENT_DARK]
-        }
+        colors={muted ? ["#F1F5F9", "#E2E8F0"] : [ACCENT, ACCENT_DARK]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.actionIconCircle}
@@ -265,7 +356,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   heroGradient: {
-    paddingBottom: 20,
+    paddingBottom: 24,
   },
   heroSafe: {
     paddingHorizontal: 20,
@@ -291,7 +382,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   heroTitle: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: "700",
     color: "#0F172A",
     letterSpacing: -0.5,
@@ -301,6 +392,37 @@ const styles = StyleSheet.create({
     color: "#64748B",
     marginTop: 6,
   },
+  clockInWidget: {
+    marginTop: 24,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  clockInGradient: {
+    padding: 20,
+  },
+  clockInContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  clockInTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    marginBottom: 4,
+  },
+  clockInSub: {
+    fontSize: 14,
+    color: "#ECFDF5",
+  },
+  clockIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   sheet: {
     paddingHorizontal: 20,
     paddingTop: 4,
@@ -309,7 +431,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
     marginTop: -8,
-    marginBottom: 8,
+    marginBottom: 16,
   },
   statIconWrap: {
     marginBottom: 6,
@@ -321,7 +443,6 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    ...shadows.statCard,
   },
   statValue: {
     fontSize: 22,
@@ -339,11 +460,57 @@ const styles = StyleSheet.create({
     color: "#94A3B8",
     marginTop: 2,
   },
+  infoCardsRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 12,
+  },
+  infoCard: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    minHeight: 100,
+  },
+  infoCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 8,
+  },
+  infoCardTitle: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#475569",
+  },
+  infoCardBody: {
+    fontSize: 14,
+    color: "#1E293B",
+    lineHeight: 20,
+    fontWeight: "500",
+  },
+  infoCardLargeValue: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  infoCardSmallText: {
+    fontSize: 14,
+    color: "#64748B",
+    fontWeight: "500",
+  },
+  infoCardSub: {
+    fontSize: 12,
+    color: "#94A3B8",
+    marginTop: 4,
+  },
   sectionTitle: {
     fontSize: 17,
     fontWeight: "700",
     color: "#0F172A",
-    marginTop: 20,
+    marginTop: 16,
     marginBottom: 12,
   },
   actionsGrid: {
