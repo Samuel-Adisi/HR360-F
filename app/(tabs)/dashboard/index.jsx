@@ -1,12 +1,15 @@
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect } from "@react-native-async-storage/async-storage"; // wait, usually @react-navigation/native 
 import { useFocusEffect as useNavFocus } from "@react-navigation/native";
-// I will just use standard imports
+import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
+  Dimensions,
+  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -14,26 +17,146 @@ import {
   Text,
   View,
 } from "react-native";
-import {
-  ArrowRightIcon,
-  BanknotesIcon,
-  CalendarDaysIcon,
-  ChartBarSquareIcon,
-  ClockIcon,
-  UsersIcon,
-  MegaphoneIcon,
-  BellIcon,
-} from "react-native-heroicons/outline";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as Location from "expo-location";
-import { useCameraPermissions } from "expo-camera";
-
-import { ProfileAvatar } from "../../../src/components/ProfileAvatar";
 import { monoText, sansText, serifText } from "../../../src/theme/fonts";
 
+// ─── Design Tokens ─────────────────────────────────────────────────────────
 const ACCENT = "#0F766E";
-const ACCENT_DARK = "#0D5C56";
+const NAVY = "#0F172A";
+const NAVY_MID = "#1E293B";
+const ORANGE = "#F97316";
+const ORANGE_LIGHT = "#FFF7ED";
+const BLUE = "#0A66C2";
+const BLUE_LIGHT = "#EFF6FF";
+const GREEN = "#059669";
+const GREEN_LIGHT = "#ECFDF5";
+const RED = "#DC2626";
+const RED_LIGHT = "#FEF2F2";
+const PURPLE = "#7C3AED";
+const BORDER = "#E2E8F0";
+const MUTED = "#64748B";
+const SURFACE = "#FFFFFF";
+const BG = "#F8FAFC";
 
+const { width: SCREEN_W } = Dimensions.get("window");
+
+const MANAGER_AVATAR =
+  "https://images.unsplash.com/photo-1560250097-0dc05a977884?w=100&h=100&fit=crop&crop=face";
+
+// ─── Mock Data ──────────────────────────────────────────────────────────────
+const KPI_DATA = [
+  {
+    label: "Total\nEmployees",
+    value: "142",
+    icon: "people-outline",
+    color: ACCENT,
+  },
+  {
+    label: "Present\nToday",
+    value: "118",
+    icon: "checkmark-circle-outline",
+    color: GREEN,
+  },
+  { label: "On\nLeave", value: "9", icon: "calendar-outline", color: ORANGE },
+  {
+    label: "Open\nPositions",
+    value: "6",
+    icon: "briefcase-outline",
+    color: BLUE,
+  },
+];
+
+const ATTENDANCE_BARS = [
+  { day: "Mon", present: 130, late: 8, absent: 4 },
+  { day: "Tue", present: 125, late: 10, absent: 7 },
+  { day: "Wed", present: 133, late: 5, absent: 4 },
+  { day: "Thu", present: 120, late: 12, absent: 10 },
+  { day: "Fri", present: 118, late: 7, absent: 17 },
+];
+const MAX_TOTAL = 142;
+
+const PENDING_LEAVES = [
+  {
+    id: 1,
+    name: "Kwame Mensah",
+    type: "Annual Leave",
+    dates: "Apr 7 – Apr 11",
+    days: 5,
+    avatar:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
+    color: "#0A66C2",
+  },
+  {
+    id: 2,
+    name: "Abena Owusu",
+    type: "Sick Leave",
+    dates: "Apr 3 – Apr 4",
+    days: 2,
+    avatar:
+      "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=100&h=100&fit=crop&crop=face",
+    color: "#7C3AED",
+  },
+  {
+    id: 3,
+    name: "Kofi Asante",
+    type: "Casual Leave",
+    dates: "Apr 5",
+    days: 1,
+    avatar:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face",
+    color: "#F97316",
+  },
+];
+
+const ACTIVITY_FEED = [
+  {
+    id: 1,
+    icon: "person-add-outline",
+    color: GREEN,
+    bg: GREEN_LIGHT,
+    text: "New hire onboarded",
+    sub: "Ama Darko · Software Engineer",
+    time: "10m ago",
+  },
+  {
+    id: 2,
+    icon: "checkmark-done-outline",
+    color: BLUE,
+    bg: BLUE_LIGHT,
+    text: "Leave approved",
+    sub: "Yaw Boateng · Annual Leave",
+    time: "45m ago",
+  },
+  {
+    id: 3,
+    icon: "star-outline",
+    color: PURPLE,
+    bg: "#F5F3FF",
+    text: "Appraisal submitted",
+    sub: "Esi Asante · Q1 2026",
+    time: "2h ago",
+  },
+  {
+    id: 4,
+    icon: "close-circle-outline",
+    color: RED,
+    bg: RED_LIGHT,
+    text: "Leave rejected",
+    sub: "Nana Agyeman · Casual Leave",
+    time: "3h ago",
+  },
+  {
+    id: 5,
+    icon: "cash-outline",
+    color: ORANGE,
+    bg: ORANGE_LIGHT,
+    text: "Payroll processed",
+    sub: "March 2026 · 142 employees",
+    time: "Yesterday",
+  },
+];
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
 function formatDate() {
   return new Intl.DateTimeFormat("en", {
     weekday: "long",
@@ -42,53 +165,105 @@ function formatDate() {
   }).format(new Date());
 }
 
-export default function DashboardHome() {
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+// ─── Animated Blob Rings ────────────────────────────────────────────────────
+function BlobRings() {
+  const anim1 = useRef(new Animated.Value(0)).current;
+  const anim2 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const pulse = (anim, delay) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(anim, {
+            toValue: 1,
+            duration: 3000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(anim, {
+            toValue: 0,
+            duration: 3000,
+            useNativeDriver: true,
+          }),
+        ]),
+      ).start();
+    pulse(anim1, 0);
+    pulse(anim2, 1500);
+  }, []);
+
+  const ring = (anim, size, opacity) => ({
+    width: size,
+    height: size,
+    borderRadius: size / 2,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
+    position: "absolute",
+    right: -size / 2 + 60,
+    top: -size / 2 + 60,
+    opacity: anim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [opacity, opacity * 0.4],
+    }),
+    transform: [
+      {
+        scale: anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] }),
+      },
+    ],
+  });
+
+  return (
+    <>
+      <Animated.View style={ring(anim1, 180, 0.5)} />
+      <Animated.View style={ring(anim2, 260, 0.3)} />
+      <Animated.View style={ring(anim1, 340, 0.15)} />
+    </>
+  );
+}
+
+// ─── Main Component ─────────────────────────────────────────────────────────
+export default function HRDashboard() {
   const router = useRouter();
   const [username, setUsername] = useState("");
-  const [avatarUri, setAvatarUri] = useState(null);
-  const [nameHint, setNameHint] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  
-  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
-  const [isClockingIn, setIsClockingIn] = useState(false);
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const loadUser = useCallback(async () => {
     try {
       const name = await AsyncStorage.getItem("username");
       setUsername(name || "");
-      setNameHint(name || "");
-      const raw = await AsyncStorage.getItem("user");
-      if (raw) {
-        try {
-          const u = JSON.parse(raw);
-          const pic =
-            u.avatar || u.photo || u.profile_picture || u.profilePicture || null;
-          setAvatarUri(typeof pic === "string" && pic.length ? pic : null);
-          const hint =
-            u.full_name ||
-            u.fullName ||
-            [u.first_name, u.last_name].filter(Boolean).join(" ") ||
-            u.name ||
-            name ||
-            "";
-          setNameHint(String(hint));
-        } catch {
-          setAvatarUri(null);
-        }
-      } else {
-        setAvatarUri(null);
-      }
     } catch {
       setUsername("");
-      setNameHint("");
-      setAvatarUri(null);
     }
   }, []);
 
   useNavFocus(
     useCallback(() => {
       loadUser();
-    }, [loadUser])
+    }, [loadUser]),
   );
 
   const onRefresh = useCallback(async () => {
@@ -97,266 +272,499 @@ export default function DashboardHome() {
     setTimeout(() => setRefreshing(false), 800);
   }, [loadUser]);
 
-  const handleClockInOut = async () => {
-    setIsClockingIn(true);
-    let { status: locStatus } = await Location.requestForegroundPermissionsAsync();
-    if (locStatus !== "granted") {
-      Alert.alert("Permission denied", "Location permission is required to clock in.");
-      setIsClockingIn(false);
-      return;
-    }
-
-    if (!cameraPermission?.granted) {
-      const camStatus = await requestCameraPermission();
-      if (!camStatus.granted) {
-        Alert.alert("Permission denied", "Camera permission is required to verify identity.");
-        setIsClockingIn(false);
-        return;
-      }
-    }
-
-    // Mock accessing location
-    try {
-      await Location.getCurrentPositionAsync({});
-      // Mock clock-in success
-      Alert.alert("Success", "You have successfully clocked in for the day.");
-    } catch (e) {
-      Alert.alert("Error", "Could not fetch location.");
-    } finally {
-      setIsClockingIn(false);
-    }
-  };
-
   return (
-    <View style={styles.screen}>
+    <LinearGradient
+      colors={[NAVY, NAVY_MID, "#243044"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 0.6 }}
+      style={styles.screen}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        style={{ flex: 1 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#FFFFFF"
+            colors={["#FFFFFF"]}
+            progressBackgroundColor={NAVY}
+          />
         }
       >
-        <LinearGradient
-          colors={["#ECFDF5", "#F0FDF4", "#F8FAFC"]}
-          style={styles.heroGradient}
-        >
+        {/* ── HERO ──────────────────────────────────────────────────── */}
+        <View style={styles.heroContainer}>
+          <BlobRings />
           <SafeAreaView edges={["top"]} style={styles.heroSafe}>
+            {/* Top row */}
             <View style={styles.heroTopRow}>
-              <View style={styles.heroTextColumn}>
-                <Text style={[styles.kicker, sansText()]}>Today</Text>
-                <Text style={[styles.heroTitle, serifText()]}>
-                  {username ? `Hi, ${username}` : "Welcome back"}
+              <View style={{ flex: 1 }}>
+                <View style={styles.roleBadge}>
+                  <Text style={[styles.roleBadgeText, sansText()]}>
+                    HR MANAGER
+                  </Text>
+                </View>
+                <Text style={[styles.greetingText, sansText()]}>
+                  {getGreeting()},
                 </Text>
-                <Text style={[styles.heroSubtitle, sansText()]}>
+                <Text style={[styles.heroName, serifText()]}>
+                  {username || "Manager"}
+                </Text>
+                <Text style={[styles.heroDate, sansText()]}>
                   {formatDate()}
                 </Text>
               </View>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-                <Pressable 
-                  onPress={() => router.push("/notifications")}
-                  style={({ pressed }) => [{ position: "relative" }, pressed && { opacity: 0.7 }]}
+
+              <View style={styles.heroActions}>
+                {/* Notification bell — Telegram frosted square */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push("/notifications");
+                  }}
+                  style={({ pressed }) => [
+                    styles.notifBtn,
+                    pressed && { opacity: 0.7 },
+                  ]}
                 >
-                  <BellIcon size={24} color="#0F172A" />
-                  <View style={{ position: "absolute", top: 0, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: "#E11D48" }} />
+                  <View style={styles.notifIconWrap}>
+                    <Ionicons
+                      name="notifications-outline"
+                      size={21}
+                      color="#FFFFFF"
+                    />
+                  </View>
+                  <View style={styles.notifBadge}>
+                    <Text style={[styles.notifBadgeText, monoText()]}>3</Text>
+                  </View>
                 </Pressable>
-                <ProfileAvatar
-                  uri={avatarUri}
-                  nameHint={nameHint || username}
-                  outerSize={48}
-                  onPress={() => router.push("/settings")}
-                />
+
+                {/* Manager profile image */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push("/profile");
+                  }}
+                  style={({ pressed }) => [pressed && { opacity: 0.8 }]}
+                >
+                  <Image
+                    source={{ uri: MANAGER_AVATAR }}
+                    style={styles.managerAvatar}
+                  />
+                  <View style={styles.onlineDot} />
+                </Pressable>
               </View>
             </View>
 
-            {/* Quick Clock-In Widget */}
-            <Pressable 
-              style={({pressed}) => [styles.clockInWidget, pressed && { opacity: 0.9 }]}
-              onPress={handleClockInOut}
-              disabled={isClockingIn}
+            {/* KPI chips */}
+            <Animated.View
+              style={[
+                styles.kpiRow,
+                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+              ]}
             >
-              <LinearGradient
-                colors={[ACCENT, ACCENT_DARK]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.clockInGradient}
-              >
-                <View style={styles.clockInContent}>
-                  <View>
-                    <Text style={[styles.clockInTitle, sansText()]}>
-                      {isClockingIn ? "Verifying..." : "Clock In"}
-                    </Text>
-                    <Text style={[styles.clockInSub, sansText()]}>
-                      Tap to record attendance
-                    </Text>
-                  </View>
-                  <View style={styles.clockIconWrap}>
-                    <ClockIcon size={24} color={ACCENT} />
-                  </View>
-                </View>
-              </LinearGradient>
-            </Pressable>
+              {KPI_DATA.map((k, i) => (
+                <KpiChip key={i} {...k} />
+              ))}
+            </Animated.View>
           </SafeAreaView>
-        </LinearGradient>
+        </View>
 
+        {/* ── CONTENT SHEET ─────────────────────────────────────────── */}
         <View style={styles.sheet}>
-          <View style={styles.statsRow}>
-            {/* Mocked Data */}
-            <StatCard
-              label="Present"
-              value="45"
-              hint="Today"
-              icon={<UsersIcon size={20} color={ACCENT} />}
+          {/* Quick Actions */}
+          <SectionLabel title="Quick Actions" />
+          <ScrollView
+            horizontal
+            nestedScrollEnabled
+            showsHorizontalScrollIndicator={false}
+            decelerationRate="fast"
+            snapToInterval={86}
+            contentContainerStyle={styles.quickActionsScroll}
+            style={{ marginBottom: 20, marginHorizontal: -16 }}
+          >
+            <View style={{ width: 16 }} />
+            <QuickAction
+              label="Add Employee"
+              iconName="person-add"
+              color={ACCENT}
+              onPress={() => router.push("/employees/add")}
             />
-            <StatCard
-              label="On leave"
-              value="3"
-              hint="This week"
-              icon={<CalendarDaysIcon size={20} color={ACCENT} />}
+            <QuickAction
+              label="Post Job"
+              iconName="briefcase"
+              color={BLUE}
+              onPress={() => router.push("/recruitment/new")}
             />
-            <StatCard
-              label="Pending"
-              value="12"
-              hint="Requests"
-              icon={<ClockIcon size={20} color={ACCENT} />}
+            <QuickAction
+              label="Run Payroll"
+              iconName="cash"
+              color={ORANGE}
+              onPress={() => router.push("/payroll/run")}
             />
-          </View>
-
-          {/* Announcements & Leave Balance Grid */}
-          <View style={styles.infoCardsRow}>
-            <View style={styles.infoCard}>
-              <View style={styles.infoCardHeader}>
-                <MegaphoneIcon size={18} color="#0EA5E9" />
-                <Text style={[styles.infoCardTitle, sansText()]}>Announcements</Text>
-              </View>
-              <Text style={[styles.infoCardBody, sansText()]}>Company Townhall this Friday at 3PM.</Text>
-            </View>
-
-            <View style={styles.infoCard}>
-              <View style={styles.infoCardHeader}>
-                <CalendarDaysIcon size={18} color="#F59E0B" />
-                <Text style={[styles.infoCardTitle, sansText()]}>My Leave</Text>
-              </View>
-              <Text style={[styles.infoCardLargeValue, monoText()]}>14 <Text style={styles.infoCardSmallText}>days</Text></Text>
-              <Text style={[styles.infoCardSub, sansText()]}>Remaining PTO</Text>
-            </View>
-          </View>
-
-          <Text style={[styles.sectionTitle, serifText()]}>Quick actions</Text>
-          <View style={styles.actionsGrid}>
-            <ActionTile
-              title="Employees"
-              subtitle="Directory & profiles"
-              icon={<UsersIcon size={22} color="#FFFFFF" />}
-              onPress={() => router.push("/employees")}
+            <QuickAction
+              label="Announce"
+              iconName="megaphone"
+              color={PURPLE}
+              onPress={() => router.push("/announcements/new")}
             />
-            <ActionTile
-              title="Attendance"
-              subtitle="Roster & time"
-              icon={<CalendarDaysIcon size={22} color="#FFFFFF" />}
+            <QuickAction
+              label="Attendance"
+              iconName="calendar"
+              color={GREEN}
               onPress={() => router.push("/attendance")}
             />
-            <ActionTile
-              title="Payroll"
-              subtitle="Runs & payslips"
-              icon={<BanknotesIcon size={22} color="#FFFFFF" />}
-              onPress={() => router.push("/dashboard/payroll")}
-            />
-            <ActionTile
-              title="Reports"
-              subtitle="Coming soon"
-              muted
-              icon={<ChartBarSquareIcon size={22} color="#94A3B8" />}
+            <QuickAction
+              label="Reports"
+              iconName="bar-chart"
+              color="#64748B"
               onPress={() => {}}
             />
-          </View>
-
-          <Text style={[styles.sectionTitle, serifText()]}>Reminders</Text>
-          <View style={styles.card}>
-            <ReminderRow title="Connect your calendar" onPress={() => {}} />
-            <View style={styles.divider} />
-            <ReminderRow
-              title="Review pending approvals"
-              onPress={() => router.push("/employees")}
+            <QuickAction
+              label="Leaves"
+              iconName="document-text"
+              color="#0891B2"
+              onPress={() => router.push("/leave")}
             />
+            <QuickAction
+              label="Settings"
+              iconName="settings"
+              color="#475569"
+              onPress={() => {}}
+            />
+            <View style={{ width: 8 }} />
+          </ScrollView>
+
+          {/* Attendance Overview */}
+          <SectionLabel title="Attendance Overview" subtitle="This week" />
+          <View style={styles.card}>
+            <View style={styles.attendanceLegendRow}>
+              <LegendDot color={ACCENT} label="Present" />
+              <LegendDot color={ORANGE} label="Late" />
+              <LegendDot color={RED} label="Absent" />
+            </View>
+            <View style={styles.barsContainer}>
+              {ATTENDANCE_BARS.map((bar, i) => (
+                <AttendanceBar key={i} {...bar} maxTotal={MAX_TOTAL} />
+              ))}
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.viewAllBtn,
+                pressed && { opacity: 0.7 },
+              ]}
+              onPress={() => router.push("/attendance")}
+            >
+              <Text style={[styles.viewAllText, sansText()]}>
+                View full records
+              </Text>
+              <Ionicons name="arrow-forward" size={14} color={ACCENT} />
+            </Pressable>
           </View>
 
-          <View style={styles.bottomPad} />
+          {/* Pending Leave Requests */}
+          <SectionLabel
+            title="Pending Leave Requests"
+            badge={PENDING_LEAVES.length}
+            onAction={() => router.push("/leave")}
+            actionLabel="See all"
+          />
+          <View style={styles.card}>
+            {PENDING_LEAVES.map((req, i) => (
+              <View key={req.id}>
+                <LeaveRequestRow
+                  {...req}
+                  onApprove={() =>
+                    Alert.alert("Approved", `${req.name}'s leave approved.`)
+                  }
+                  onReject={() =>
+                    Alert.alert("Rejected", `${req.name}'s leave rejected.`)
+                  }
+                />
+                {i < PENDING_LEAVES.length - 1 && (
+                  <View style={styles.divider} />
+                )}
+              </View>
+            ))}
+          </View>
+
+          {/* Payroll + Recruitment */}
+          <View style={styles.twoColRow}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.infoBlock,
+                pressed && { opacity: 0.9 },
+              ]}
+              onPress={() => router.push("/payroll")}
+            >
+              <LinearGradient
+                colors={[ORANGE, "#EA6B00"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.infoBlockGradient}
+              >
+                <Ionicons name="cash-outline" size={22} color="#fff" />
+                <Text style={[styles.infoBlockLabel, sansText()]}>Payroll</Text>
+                <Text style={[styles.infoBlockValue, monoText()]}>
+                  March 2026
+                </Text>
+                <View style={styles.infoBlockStatusPill}>
+                  <Text style={[styles.infoBlockStatusText, sansText()]}>
+                    ✓ Processed
+                  </Text>
+                </View>
+                <Text style={[styles.infoBlockSub, sansText()]}>
+                  142 employees · GH₵ 1.2M
+                </Text>
+              </LinearGradient>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.infoBlock,
+                pressed && { opacity: 0.9 },
+              ]}
+              onPress={() => router.push("/recruitment")}
+            >
+              <LinearGradient
+                colors={[BLUE, "#0953A8"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.infoBlockGradient}
+              >
+                <Ionicons name="briefcase-outline" size={22} color="#fff" />
+                <Text style={[styles.infoBlockLabel, sansText()]}>
+                  Recruitment
+                </Text>
+                <Text style={[styles.infoBlockValue, monoText()]}>6 Open</Text>
+                <View
+                  style={[
+                    styles.infoBlockStatusPill,
+                    { backgroundColor: "rgba(255,255,255,0.2)" },
+                  ]}
+                >
+                  <Text style={[styles.infoBlockStatusText, sansText()]}>
+                    24 applicants
+                  </Text>
+                </View>
+                <Text style={[styles.infoBlockSub, sansText()]}>
+                  8 pending AI screening
+                </Text>
+              </LinearGradient>
+            </Pressable>
+          </View>
+
+          {/* Recent Activity */}
+          <SectionLabel title="Recent Activity" />
+          <View style={styles.card}>
+            {ACTIVITY_FEED.map((item, i) => (
+              <View key={item.id}>
+                <ActivityRow {...item} />
+                {i < ACTIVITY_FEED.length - 1 && (
+                  <View style={styles.divider} />
+                )}
+              </View>
+            ))}
+          </View>
         </View>
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
-function StatCard({ label, value, hint, icon }) {
+// ─── Sub-Components ─────────────────────────────────────────────────────────
+
+function SectionLabel({ title, subtitle, badge, onAction, actionLabel }) {
   return (
-    <View style={styles.statCard}>
-      <View style={styles.statIconWrap}>{icon}</View>
-      <Text style={[styles.statValue, monoText()]}>{value}</Text>
-      <Text style={[styles.statLabel, sansText()]}>{label}</Text>
-      <Text style={[styles.statHint, sansText()]}>{hint}</Text>
+    <View style={styles.sectionLabelRow}>
+      <View style={styles.sectionLabelLeft}>
+        <View style={styles.sectionBarAccent} />
+        <Text style={[styles.sectionTitle, sansText()]}>{title}</Text>
+        {subtitle && (
+          <Text style={[styles.sectionSubtitle, sansText()]}>{subtitle}</Text>
+        )}
+        {badge != null && (
+          <View style={styles.sectionBadge}>
+            <Text style={[styles.sectionBadgeText, monoText()]}>{badge}</Text>
+          </View>
+        )}
+      </View>
+      {onAction && (
+        <Pressable
+          onPress={onAction}
+          style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+        >
+          <Text style={[styles.sectionAction, sansText()]}>{actionLabel}</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
 
-function ActionTile({ title, subtitle, icon, onPress, muted = false }) {
+// Telegram-style: solid colored square icon, white icon inside
+function KpiChip({ label, value, icon, color }) {
+  return (
+    <View style={styles.kpiChip}>
+      <View style={[styles.kpiIconWrap, { backgroundColor: color }]}>
+        <Ionicons name={icon} size={13} color="#FFFFFF" />
+      </View>
+      <Text style={[styles.kpiValue, monoText()]}>{value}</Text>
+      <Text style={[styles.kpiLabel, sansText()]}>{label}</Text>
+    </View>
+  );
+}
+
+// Telegram-style: solid colored square, haptics
+function QuickAction({ label, iconName, color, onPress }) {
   return (
     <Pressable
-      onPress={onPress}
-      disabled={muted}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        onPress?.();
+      }}
       style={({ pressed }) => [
-        styles.actionTile,
-        muted && styles.actionTileMuted,
-        pressed && !muted && styles.actionPressed,
+        styles.quickActionBtn,
+        pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] },
       ]}
     >
-      <LinearGradient
-        colors={muted ? ["#F1F5F9", "#E2E8F0"] : [ACCENT, ACCENT_DARK]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.actionIconCircle}
-      >
-        {icon}
-      </LinearGradient>
-      <Text
-        style={[
-          styles.actionTitle,
-          sansText(),
-          muted && styles.actionTitleMuted,
-        ]}
-      >
-        {title}
-      </Text>
-      <Text
-        style={[styles.actionSub, sansText(), muted && styles.actionSubMuted]}
-      >
-        {subtitle}
-      </Text>
+      <View style={[styles.quickActionIcon, { backgroundColor: color }]}>
+        <Ionicons name={iconName} size={24} color="#FFFFFF" />
+      </View>
+      <Text style={[styles.quickActionLabel, sansText()]}>{label}</Text>
     </Pressable>
   );
 }
 
-function ReminderRow({ title, onPress }) {
+function AttendanceBar({ day, present, late, absent, maxTotal }) {
+  const presentH = (present / maxTotal) * 80;
+  const lateH = (late / maxTotal) * 80;
+  const absentH = (absent / maxTotal) * 80;
+
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.reminderRow, pressed && { opacity: 0.85 }]}
-    >
-      <Text style={[styles.reminderText, sansText()]}>{title}</Text>
-      <ArrowRightIcon size={18} color="#64748B" />
-    </Pressable>
+    <View style={styles.barCol}>
+      <View style={styles.barStack}>
+        <View
+          style={[
+            styles.barSegment,
+            { height: absentH, backgroundColor: RED + "99" },
+          ]}
+        />
+        <View
+          style={[
+            styles.barSegment,
+            { height: lateH, backgroundColor: ORANGE + "99" },
+          ]}
+        />
+        <View
+          style={[
+            styles.barSegment,
+            {
+              height: presentH,
+              backgroundColor: ACCENT,
+              borderTopLeftRadius: 4,
+              borderTopRightRadius: 4,
+            },
+          ]}
+        />
+      </View>
+      <Text style={[styles.barLabel, sansText()]}>{day}</Text>
+    </View>
   );
 }
 
+function LegendDot({ color, label }) {
+  return (
+    <View style={styles.legendItem}>
+      <View style={[styles.legendDot, { backgroundColor: color }]} />
+      <Text style={[styles.legendText, sansText()]}>{label}</Text>
+    </View>
+  );
+}
+
+function LeaveRequestRow({
+  name,
+  type,
+  dates,
+  days,
+  avatar,
+  color,
+  onApprove,
+  onReject,
+}) {
+  return (
+    <View style={styles.leaveRow}>
+      <Image source={{ uri: avatar }} style={styles.leaveAvatar} />
+      <View style={{ flex: 1, marginLeft: 12 }}>
+        <Text style={[styles.leaveName, sansText()]}>{name}</Text>
+        <Text style={[styles.leaveTypeText, sansText(), { color }]}>
+          {type}
+        </Text>
+        <Text style={[styles.leaveDates, sansText()]}>
+          {dates} · {days}d
+        </Text>
+      </View>
+      <View style={styles.leaveActions}>
+        <Pressable
+          onPress={() => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            onApprove();
+          }}
+          style={({ pressed }) => [
+            styles.leaveActionCircle,
+            { backgroundColor: GREEN + "15" },
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <Ionicons name="checkmark" size={18} color={GREEN} />
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            onReject();
+          }}
+          style={({ pressed }) => [
+            styles.leaveActionCircle,
+            { backgroundColor: RED + "15" },
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <Ionicons name="close" size={18} color={RED} />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+// Telegram-style: solid colored square icon, white icon inside
+function ActivityRow({ icon, color, bg, text, sub, time }) {
+  return (
+    <View style={styles.activityRow}>
+      <View style={[styles.activityIconWrap, { backgroundColor: color }]}>
+        <Ionicons name={icon} size={17} color="#FFFFFF" />
+      </View>
+      <View style={{ flex: 1, marginLeft: 12 }}>
+        <Text style={[styles.activityText, sansText()]}>{text}</Text>
+        <Text style={[styles.activitySub, sansText()]}>{sub}</Text>
+      </View>
+      <Text style={[styles.activityTime, sansText()]}>{time}</Text>
+    </View>
+  );
+}
+
+// ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
   },
   scrollContent: {
     flexGrow: 1,
   },
-  heroGradient: {
-    paddingBottom: 24,
+
+  // Hero
+  heroContainer: {
+    overflow: "hidden",
+    paddingBottom: 28,
   },
   heroSafe: {
     paddingHorizontal: 20,
@@ -366,224 +774,414 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 16,
+    marginBottom: 24,
   },
-  heroTextColumn: {
-    flex: 1,
-    minWidth: 0,
-    paddingRight: 4,
+  heroActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    alignSelf: "flex-start",
   },
-  kicker: {
+  roleBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: ACCENT + "33",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: ACCENT + "55",
+  },
+  roleBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#5EEAD4",
+    letterSpacing: 1.2,
+  },
+  greetingText: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.6)",
+    marginBottom: 2,
+  },
+  heroName: {
+    fontSize: 26,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: -0.5,
+    marginBottom: 4,
+  },
+  heroDate: {
     fontSize: 13,
-    fontWeight: "600",
-    color: ACCENT,
-    letterSpacing: 0.3,
-    textTransform: "uppercase",
+    color: "rgba(255,255,255,0.5)",
+  },
+
+  // Notification — Telegram frosted square
+  notifBtn: {
+    position: "relative",
+    alignSelf: "flex-start",
+  },
+  notifIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.16)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notifBadge: {
+    position: "absolute",
+    top: -5,
+    right: -5,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: RED,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: NAVY,
+  },
+  notifBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+
+  // Manager avatar
+  managerAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.25)",
+  },
+  onlineDot: {
+    position: "absolute",
+    bottom: -1,
+    right: -1,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: GREEN,
+    borderWidth: 2,
+    borderColor: NAVY,
+  },
+
+  // KPI
+  kpiRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  kpiChip: {
+    flex: 1,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 14,
+    padding: 10,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  kpiIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 6,
   },
-  heroTitle: {
-    fontSize: 22,
+  kpiValue: {
+    fontSize: 18,
     fontWeight: "700",
-    color: "#0F172A",
+    color: "#FFFFFF",
     letterSpacing: -0.5,
   },
-  heroSubtitle: {
-    fontSize: 15,
-    color: "#64748B",
-    marginTop: 6,
+  kpiLabel: {
+    fontSize: 9,
+    color: "rgba(255,255,255,0.5)",
+    textAlign: "center",
+    marginTop: 2,
+    lineHeight: 13,
   },
-  clockInWidget: {
-    marginTop: 24,
+
+  // Sheet
+  sheet: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 16,
+    backgroundColor: BG,
+  },
+
+  // Section labels
+  sectionLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    marginTop: 8,
+  },
+  sectionLabelLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  sectionBarAccent: {
+    width: 3,
+    height: 16,
+    borderRadius: 2,
+    backgroundColor: ACCENT,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#0F172A",
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
+  },
+  sectionSubtitle: {
+    fontSize: 11,
+    color: MUTED,
+    marginTop: 1,
+  },
+  sectionBadge: {
+    backgroundColor: ACCENT + "20",
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  sectionBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: ACCENT,
+  },
+  sectionAction: {
+    fontSize: 13,
+    color: ACCENT,
+    fontWeight: "600",
+  },
+
+  // Card
+  card: {
+    backgroundColor: SURFACE,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: BORDER,
+    marginBottom: 16,
+    overflow: "hidden",
+  },
+
+  // Quick Actions
+  quickActionsScroll: {
+    gap: 14,
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  quickActionBtn: {
+    alignItems: "center",
+    gap: 7,
+    width: 72,
+  },
+  quickActionIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quickActionLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#334155",
+    textAlign: "center",
+  },
+
+  // Attendance chart
+  attendanceLegendRow: {
+    flexDirection: "row",
+    gap: 16,
+    padding: 14,
+    paddingBottom: 8,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendText: {
+    fontSize: 11,
+    color: MUTED,
+  },
+  barsContainer: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-around",
+    paddingHorizontal: 14,
+    paddingBottom: 4,
+    height: 110,
+  },
+  barCol: {
+    alignItems: "center",
+    gap: 6,
+    flex: 1,
+  },
+  barStack: {
+    width: 28,
+    justifyContent: "flex-end",
+    alignItems: "center",
+    height: 90,
+    gap: 1,
+  },
+  barSegment: {
+    width: 28,
+    borderRadius: 2,
+  },
+  barLabel: {
+    fontSize: 11,
+    color: MUTED,
+    fontWeight: "600",
+  },
+  viewAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: BORDER,
+    marginTop: 4,
+  },
+  viewAllText: {
+    fontSize: 13,
+    color: ACCENT,
+    fontWeight: "600",
+  },
+
+  // Leave requests
+  leaveRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+  },
+  leaveAvatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: BORDER,
+  },
+  leaveName: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  leaveTypeText: {
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  leaveDates: {
+    fontSize: 11,
+    color: "#94A3B8",
+  },
+  leaveActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  leaveActionCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  // Two-col blocks
+  twoColRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 16,
+  },
+  infoBlock: {
+    flex: 1,
     borderRadius: 16,
     overflow: "hidden",
   },
-  clockInGradient: {
-    padding: 20,
-  },
-  clockInContent: {
-    flexDirection: "row",
-    alignItems: "center",
+  infoBlockGradient: {
+    padding: 16,
+    minHeight: 160,
     justifyContent: "space-between",
   },
-  clockInTitle: {
+  infoBlockLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.7)",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginTop: 10,
+  },
+  infoBlockValue: {
     fontSize: 20,
     fontWeight: "700",
     color: "#FFFFFF",
-    marginBottom: 4,
-  },
-  clockInSub: {
-    fontSize: 14,
-    color: "#ECFDF5",
-  },
-  clockIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sheet: {
-    paddingHorizontal: 20,
-    paddingTop: 4,
-  },
-  statsRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: -8,
-    marginBottom: 16,
-  },
-  statIconWrap: {
-    marginBottom: 6,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  statValue: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#0F172A",
-  },
-  statLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#334155",
-    marginTop: 4,
-  },
-  statHint: {
-    fontSize: 11,
-    color: "#94A3B8",
     marginTop: 2,
   },
-  infoCardsRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 12,
+  infoBlockStatusPill: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255,255,255,0.25)",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginTop: 6,
   },
-  infoCard: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    minHeight: 100,
+  infoBlockStatusText: {
+    fontSize: 11,
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
-  infoCardHeader: {
+  infoBlockSub: {
+    fontSize: 11,
+    color: "rgba(255,255,255,0.6)",
+    marginTop: 6,
+  },
+
+  // Activity feed
+  activityRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginBottom: 8,
+    padding: 14,
   },
-  infoCardTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#475569",
-  },
-  infoCardBody: {
-    fontSize: 14,
-    color: "#1E293B",
-    lineHeight: 20,
-    fontWeight: "500",
-  },
-  infoCardLargeValue: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#0F172A",
-  },
-  infoCardSmallText: {
-    fontSize: 14,
-    color: "#64748B",
-    fontWeight: "500",
-  },
-  infoCardSub: {
-    fontSize: 12,
-    color: "#94A3B8",
-    marginTop: 4,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#0F172A",
-    marginTop: 16,
-    marginBottom: 12,
-  },
-  actionsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    rowGap: 12,
-    marginBottom: 8,
-  },
-  actionIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+  activityIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 10,
   },
-  actionTile: {
-    width: "48%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  actionTileMuted: {
-    opacity: 0.85,
-  },
-  actionPressed: {
-    opacity: 0.92,
-    transform: [{ scale: 0.98 }],
-  },
-  actionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
+  activityText: {
+    fontSize: 14,
+    fontWeight: "600",
     color: "#0F172A",
   },
-  actionTitleMuted: {
-    color: "#64748B",
-  },
-  actionSub: {
+  activitySub: {
     fontSize: 12,
-    color: "#64748B",
-    marginTop: 4,
+    color: MUTED,
+    marginTop: 1,
   },
-  actionSubMuted: {
+  activityTime: {
+    fontSize: 11,
     color: "#94A3B8",
   },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
+
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "#E2E8F0",
-  },
-  reminderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-    paddingHorizontal: 4,
-  },
-  reminderText: {
-    fontSize: 15,
-    color: "#334155",
-    flex: 1,
-    paddingRight: 8,
-  },
-  bottomPad: {
-    height: 100,
+    backgroundColor: BORDER,
+    marginHorizontal: 14,
   },
 });
