@@ -6,7 +6,7 @@ export default function EmployeesStack() {
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
+        headerShown: false,
         headerBackTitle: "Back",
         headerStyle: { backgroundColor: "#FFFFFF" },
         headerTintColor: "#0F172A",
@@ -16,7 +16,10 @@ export default function EmployeesStack() {
       }}
     >
       <Stack.Screen name="index" options={{ title: "Employees" }} />
-      <Stack.Screen name="add" options={{ title: "Add", presentation: "modal" }} />
+      <Stack.Screen
+        name="add"
+        options={{ title: "Add", presentation: "modal" }}
+      />
     </Stack>
   );
 }
