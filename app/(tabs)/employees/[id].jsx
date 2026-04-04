@@ -1,8 +1,12 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { ChevronLeftIcon, EnvelopeIcon, PhoneIcon } from "react-native-heroicons/outline";
 import { Image } from "expo-image";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ChevronLeftIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+} from "react-native-heroicons/outline";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { monoText, sansText, serifText } from "../../../src/theme/fonts";
 
@@ -11,23 +15,58 @@ const BG_LIGHT = "#F8FAFC";
 
 // Same Mock data lookup for presentation
 const MOCK_EMPLOYEES = {
-  "1": { name: "Sarah Miller", title: "Product Designer", department: "Design", uri: "https://i.pravatar.cc/150?u=1", email: "sarah.m@company.com", phone: "+1 (555) 123-4567" },
-  "2": { name: "James Chen", title: "Backend Engineer", department: "Engineering", uri: "https://i.pravatar.cc/150?u=2", email: "james.c@company.com", phone: "+1 (555) 987-6543" },
-  "3": { name: "Alice Johnson", title: "HR Manager", department: "Human Resources", uri: "https://i.pravatar.cc/150?u=3", email: "alice.j@company.com", phone: "+1 (555) 456-7890" },
-  "4": { name: "Robert Fox", title: "Marketing Lead", department: "Marketing", uri: "https://i.pravatar.cc/150?u=4", email: "robert.f@company.com", phone: "+1 (555) 321-0987" },
-  "5": { name: "Emily Davis", title: "Sales Executive", department: "Sales", uri: "https://i.pravatar.cc/150?u=5", email: "emily.d@company.com", phone: "+1 (555) 654-3210" },
+  1: {
+    name: "Sarah Miller",
+    title: "Product Designer",
+    department: "Design",
+    uri: "https://i.pravatar.cc/150?u=1",
+    email: "sarah.m@company.com",
+    phone: "+1 (555) 123-4567",
+  },
+  2: {
+    name: "James Chen",
+    title: "Backend Engineer",
+    department: "Engineering",
+    uri: "https://i.pravatar.cc/150?u=2",
+    email: "james.c@company.com",
+    phone: "+1 (555) 987-6543",
+  },
+  3: {
+    name: "Alice Johnson",
+    title: "HR Manager",
+    department: "Human Resources",
+    uri: "https://i.pravatar.cc/150?u=3",
+    email: "alice.j@company.com",
+    phone: "+1 (555) 456-7890",
+  },
+  4: {
+    name: "Robert Fox",
+    title: "Marketing Lead",
+    department: "Marketing",
+    uri: "https://i.pravatar.cc/150?u=4",
+    email: "robert.f@company.com",
+    phone: "+1 (555) 321-0987",
+  },
+  5: {
+    name: "Emily Davis",
+    title: "Sales Executive",
+    department: "Sales",
+    uri: "https://i.pravatar.cc/150?u=5",
+    email: "emily.d@company.com",
+    phone: "+1 (555) 654-3210",
+  },
 };
 
 export default function EmployeeProfileScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  
+
   const emp = MOCK_EMPLOYEES[id] || MOCK_EMPLOYEES["1"]; // fallback
 
   return (
     <View style={styles.container}>
       <SafeAreaView edges={["top"]} style={styles.header}>
-        <Pressable 
+        <Pressable
           style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
           onPress={() => router.back()}
         >
@@ -53,7 +92,9 @@ export default function EmployeeProfileScreen() {
 
         {/* Contact Info */}
         <View style={styles.card}>
-          <Text style={[styles.cardTitle, serifText()]}>Contact Information</Text>
+          <Text style={[styles.cardTitle, serifText()]}>
+            Contact Information
+          </Text>
           <View style={styles.infoRow}>
             <View style={styles.iconBox}>
               <EnvelopeIcon size={20} color={ACCENT} />
@@ -80,7 +121,9 @@ export default function EmployeeProfileScreen() {
           <Text style={[styles.cardTitle, serifText()]}>Work Details</Text>
           <View style={styles.detailRow}>
             <Text style={[styles.detailLabel, sansText()]}>Employee ID</Text>
-            <Text style={[styles.detailValue, monoText()]}>EMP-{id.padStart(4, '0')}</Text>
+            <Text style={[styles.detailValue, monoText()]}>
+              EMP-{id.padStart(4, "0")}
+            </Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.detailRow}>
@@ -93,7 +136,6 @@ export default function EmployeeProfileScreen() {
             <Text style={[styles.detailValue, sansText()]}>Oct 12, 2023</Text>
           </View>
         </View>
-
       </ScrollView>
     </View>
   );
