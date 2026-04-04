@@ -38,14 +38,16 @@ function NativeShell() {
       <NativeTabs
         blurEffect="systemChromeMaterial"
         tintColor={tint}
-        labelStyle={{ color: labelColor }}
+        labelStyle={{ color: labelColor, fontSize: 10 }}
         iconColor={{ default: labelColor, selected: tint }}
         minimizeBehavior="automatic"
         labelVisibilityMode="unlabeled"
+        style={{ height: 50 }}
       >
         <NativeTabs.Trigger name="dashboard">
           <Icon
             sf="house.fill"
+            symbolScale="small"
             androidSrc={<VectorIcon family={MaterialIcons} name="home" />}
           />
           <Label hidden />
@@ -53,6 +55,7 @@ function NativeShell() {
         <NativeTabs.Trigger name="employees">
           <Icon
             sf="person.3.fill"
+            symbolScale="small"
             androidSrc={<VectorIcon family={MaterialIcons} name="groups" />}
           />
           <Label hidden />
@@ -60,16 +63,18 @@ function NativeShell() {
         <NativeTabs.Trigger name="attendance">
           <Icon
             sf="calendar"
+            symbolScale="small"
             androidSrc={
               <VectorIcon family={MaterialIcons} name="calendar-today" />
             }
           />
           <Label hidden />
         </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="settings">
+        <NativeTabs.Trigger name="profile">
           <Icon
-            sf="gearshape.fill"
-            androidSrc={<VectorIcon family={MaterialIcons} name="settings" />}
+            sf="person.crop.circle.fill"
+            symbolScale="small"
+            androidSrc={<VectorIcon family={MaterialIcons} name="account-circle" />}
           />
           <Label hidden />
         </NativeTabs.Trigger>
@@ -101,7 +106,7 @@ function WebTabs() {
         <Tabs.Screen name="dashboard" />
         <Tabs.Screen name="employees" />
         <Tabs.Screen name="attendance" />
-        <Tabs.Screen name="settings" />
+        <Tabs.Screen name="profile" />
       </Tabs>
     </View>
   );
