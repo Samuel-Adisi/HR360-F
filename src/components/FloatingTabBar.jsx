@@ -2,9 +2,9 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import {
   CalendarDaysIcon,
-  Cog6ToothIcon,
   HomeIcon,
   PlusIcon,
+  UserCircleIcon,
   UsersIcon,
 } from "react-native-heroicons/outline";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { shadows } from "../theme/shadows";
 
-const ICON_SIZE = 22;
+const ICON_SIZE = 20;
 const ICON_ACTIVE = "#FFFFFF";
 const ICON_INACTIVE = "#64748B";
 /** Teal green FAB — matches dashboard / brand accent for primary actions */
@@ -22,7 +22,7 @@ const ROUTE_ICONS = {
   dashboard: HomeIcon,
   employees: UsersIcon,
   attendance: CalendarDaysIcon,
-  settings: Cog6ToothIcon,
+  profile: UserCircleIcon,
 };
 
 export function FloatingTabBar({ state, navigation }) {
@@ -123,9 +123,9 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -133,9 +133,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#0F172A",
   },
   fab: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: FAB_GREEN,
     alignItems: "center",
     justifyContent: "center",

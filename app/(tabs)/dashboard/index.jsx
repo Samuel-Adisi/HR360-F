@@ -5,6 +5,7 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Circle, G, Svg } from "react-native-svg";
 import {
   Alert,
   Animated,
@@ -48,21 +49,30 @@ const KPI_DATA = [
   {
     label: "Total\nEmployees",
     value: "142",
-    icon: "people-outline",
+    pct: 1.0,          // 100% — full ring as baseline
     color: ACCENT,
+    trackColor: "rgba(255,255,255,0.12)",
   },
   {
     label: "Present\nToday",
     value: "118",
-    icon: "checkmark-circle-outline",
+    pct: 118 / 142,    // 83%
     color: GREEN,
+    trackColor: "rgba(255,255,255,0.12)",
   },
-  { label: "On\nLeave", value: "9", icon: "calendar-outline", color: ORANGE },
+  {
+    label: "On\nLeave",
+    value: "9",
+    pct: 9 / 142,      // 6%
+    color: ORANGE,
+    trackColor: "rgba(255,255,255,0.12)",
+  },
   {
     label: "Open\nPositions",
     value: "6",
-    icon: "briefcase-outline",
+    pct: 6 / 20,       // out of 20 max headcount
     color: BLUE,
+    trackColor: "rgba(255,255,255,0.12)",
   },
 ];
 
@@ -602,14 +612,67 @@ function SectionLabel({ title, subtitle, badge, onAction, actionLabel }) {
   );
 }
 
-// Telegram-style: solid colored square icon, white icon inside
-function KpiChip({ label, value, icon, color }) {
+// ── Animated Donut Ring KPI ──────────────────────────────────────────────────
+const RING_SIZE = 70;          // outer diameter of the SVG canvas
+const STROKE = 7;              // stroke width
+const R = (RING_SIZE - STROKE) / 2;
+const CIRCUMFERENCE = 2 * Math.PI * R;
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+function KpiChip({ label, value, pct, color, trackColor }) {
+  const animVal = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(animVal, {
+      toValue: pct,
+      duration: 1100,
+      delay: 200,
+      useNativeDriver: false, // strokeDashoffset isn't native-driveable
+    }).start();
+  }, [pct]);
+
+  // strokeDashoffset: CIRCUMFERENCE = hidden, 0 = fully shown
+  const dashOffset = useRef(
+    animVal.interpolate({
+      inputRange: [0, 1],
+      outputRange: [CIRCUMFERENCE, 0],
+    })
+  ).current;
+
   return (
     <View style={styles.kpiChip}>
-      <View style={[styles.kpiIconWrap, { backgroundColor: color }]}>
-        <Ionicons name={icon} size={13} color="#FFFFFF" />
+      {/* Donut ring */}
+      <View style={styles.kpiRingWrap}>
+        <Svg width={RING_SIZE} height={RING_SIZE} viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}>
+          <G rotation="-90" origin={`${RING_SIZE / 2}, ${RING_SIZE / 2}`}>
+            {/* Track */}
+            <Circle
+              cx={RING_SIZE / 2}
+              cy={RING_SIZE / 2}
+              r={R}
+              stroke={trackColor}
+              strokeWidth={STROKE}
+              fill="none"
+            />
+            {/* Animated arc */}
+            <AnimatedCircle
+              cx={RING_SIZE / 2}
+              cy={RING_SIZE / 2}
+              r={R}
+              stroke={color}
+              strokeWidth={STROKE}
+              fill="none"
+              strokeDasharray={CIRCUMFERENCE}
+              strokeDashoffset={dashOffset}
+              strokeLinecap="round"
+            />
+          </G>
+        </Svg>
+        {/* Center value */}
+        <View style={styles.kpiRingCenter}>
+          <Text style={[styles.kpiValue, monoText(), { color }]}>{value}</Text>
+        </View>
       </View>
-      <Text style={[styles.kpiValue, monoText()]}>{value}</Text>
       <Text style={[styles.kpiLabel, sansText()]}>{label}</Text>
     </View>
   );
@@ -823,7 +886,7 @@ const styles = StyleSheet.create({
   notifIconWrap: {
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: 22,
     backgroundColor: "rgba(255,255,255,0.10)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.16)",
@@ -832,8 +895,8 @@ const styles = StyleSheet.create({
   },
   notifBadge: {
     position: "absolute",
-    top: -5,
-    right: -5,
+    top: -2,
+    right: -2,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
@@ -854,14 +917,14 @@ const styles = StyleSheet.create({
   managerAvatar: {
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: 22,
     borderWidth: 2,
     borderColor: "rgba(255,255,255,0.25)",
   },
   onlineDot: {
     position: "absolute",
-    bottom: -1,
-    right: -1,
+    bottom: 2,
+    right: 2,
     width: 12,
     height: 12,
     borderRadius: 6,
@@ -873,36 +936,35 @@ const styles = StyleSheet.create({
   // KPI
   kpiRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: 6,
   },
   kpiChip: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 14,
-    padding: 10,
+    paddingVertical: 8,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
   },
-  kpiIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+  kpiRingWrap: {
+    width: RING_SIZE,
+    height: RING_SIZE,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 6,
+    marginBottom: 8,
+  },
+  kpiRingCenter: {
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
   },
   kpiValue: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: "700",
     color: "#FFFFFF",
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   kpiLabel: {
     fontSize: 9,
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(255,255,255,0.55)",
     textAlign: "center",
-    marginTop: 2,
     lineHeight: 13,
   },
 

@@ -13,8 +13,9 @@ import {
 import {
   BellIcon,
   ChevronRightIcon,
+  Cog6ToothIcon,
   LockClosedIcon,
-  MoonIcon,
+  PencilSquareIcon,
   QuestionMarkCircleIcon,
   UserIcon,
 } from "react-native-heroicons/outline";
@@ -26,10 +27,11 @@ const ACCENT = "#0F766E";
 const RED_ACCENT = "#E11D48";
 const BG_LIGHT = "#F8FAFC";
 
-export default function SettingsHome() {
+export default function ProfileHome() {
   const [username, setUsername] = useState("");
   const [avatarUri, setAvatarUri] = useState(null);
   const [emailHint, setEmailHint] = useState("");
+  const [role, setRole] = useState("");
 
   const loadUser = useCallback(async () => {
     try {
@@ -42,6 +44,7 @@ export default function SettingsHome() {
           const pic = u.avatar || u.photo || u.profile_picture || null;
           setAvatarUri(typeof pic === "string" && pic.length ? pic : null);
           setEmailHint(u.email || "user@company.com");
+          setRole(u.role || u.position || "");
         } catch {
           setEmailHint("user@company.com");
         }
@@ -103,74 +106,81 @@ export default function SettingsHome() {
 
   return (
     <View style={styles.container}>
-      {/* Custom Safe Area Header handled via padding in ScrollView */}
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        
+
         {/* Profile Hero Section */}
         <View style={styles.profileSection}>
-          <Text style={[styles.pageTitle, serifText()]}>Settings</Text>
           <View style={styles.avatarWrap}>
-             <ProfileAvatar
+            <ProfileAvatar
               uri={avatarUri}
               nameHint={username}
-              outerSize={80}
-              onPress={() => {}}
+              outerSize={88}
+              onPress={() => handleMockPress("Change photo")}
             />
+            <Pressable
+              style={styles.editPhotoBtn}
+              onPress={() => handleMockPress("Change photo")}
+            >
+              <PencilSquareIcon size={14} color="#FFFFFF" />
+            </Pressable>
           </View>
           <Text style={[styles.userName, serifText()]}>{username}</Text>
+          {!!role && (
+            <Text style={[styles.userRole, sansText()]}>{role}</Text>
+          )}
           <Text style={[styles.userEmail, sansText()]}>{emailHint}</Text>
-          
-          <Pressable 
-            style={({pressed}) => [styles.editProfileBtn, pressed && {opacity: 0.8}]}
+
+          <Pressable
+            style={({ pressed }) => [styles.editProfileBtn, pressed && { opacity: 0.8 }]}
             onPress={() => handleMockPress("Edit Profile")}
           >
             <Text style={[styles.editProfileText, sansText()]}>Edit Profile</Text>
           </Pressable>
         </View>
 
-        {/* Account Options */}
+        {/* Account */}
         <View style={styles.optionsGroup}>
-          <Text style={[styles.groupTitle, sansText()]}>Preferences</Text>
+          <Text style={[styles.groupTitle, sansText()]}>Account</Text>
           <View style={styles.card}>
-            <OptionRow 
-              title="Personal Information" 
-              icon={<UserIcon size={20} color={ACCENT} />} 
+            <OptionRow
+              title="Personal Information"
+              icon={<UserIcon size={20} color={ACCENT} />}
               onPress={() => handleMockPress("Personal Info")}
             />
             <View style={styles.divider} />
-            <OptionRow 
-              title="Push Notifications" 
-              icon={<BellIcon size={20} color={ACCENT} />} 
+            <OptionRow
+              title="Push Notifications"
+              icon={<BellIcon size={20} color={ACCENT} />}
               onPress={() => handleMockPress("Notifications")}
-            />
-            <View style={styles.divider} />
-            <OptionRow 
-              title="Appearance" 
-              icon={<MoonIcon size={20} color={ACCENT} />} 
-              onPress={() => handleMockPress("Theme Selection")}
             />
           </View>
         </View>
 
-        {/* Security Options */}
+        {/* Security */}
         <View style={styles.optionsGroup}>
           <Text style={[styles.groupTitle, sansText()]}>Security</Text>
           <View style={styles.card}>
-            <OptionRow 
-              title="Change Password" 
-              icon={<LockClosedIcon size={20} color={ACCENT} />} 
+            <OptionRow
+              title="Change Password"
+              icon={<LockClosedIcon size={20} color={ACCENT} />}
               onPress={() => handleMockPress("Change Password")}
             />
           </View>
         </View>
 
-        {/* Other */}
+        {/* App Settings — navigates into the settings sub-screen */}
         <View style={styles.optionsGroup}>
-          <Text style={[styles.groupTitle, sansText()]}>Support</Text>
+          <Text style={[styles.groupTitle, sansText()]}>App</Text>
           <View style={styles.card}>
-            <OptionRow 
-              title="Help Center" 
-              icon={<QuestionMarkCircleIcon size={20} color={ACCENT} />} 
+            <OptionRow
+              title="Settings"
+              icon={<Cog6ToothIcon size={20} color={ACCENT} />}
+              onPress={() => router.push("/profile/settings")}
+            />
+            <View style={styles.divider} />
+            <OptionRow
+              title="Help Center"
+              icon={<QuestionMarkCircleIcon size={20} color={ACCENT} />}
               onPress={() => handleMockPress("Help Center")}
             />
           </View>
@@ -178,18 +188,15 @@ export default function SettingsHome() {
 
         {/* Sign Out */}
         <View style={styles.logoutWrap}>
-           <Pressable
+          <Pressable
             onPress={confirmSignOut}
-            style={({ pressed }) => [
-              styles.logoutButton,
-              pressed && { opacity: 0.8 },
-            ]}
+            style={({ pressed }) => [styles.logoutButton, pressed && { opacity: 0.8 }]}
           >
             <Text style={[styles.logoutText, sansText()]}>Sign Out</Text>
           </Pressable>
         </View>
 
-        <View style={{ height: 60 }} />
+        <View style={{ height: 80 }} />
       </ScrollView>
     </View>
   );
@@ -202,38 +209,55 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 60,
-  },
-  pageTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#0F172A",
-    alignSelf: "flex-start",
-    marginBottom: 24,
+    paddingTop: 72,
   },
   profileSection: {
     alignItems: "center",
     marginBottom: 32,
   },
   avatarWrap: {
-    marginBottom: 16,
+    marginBottom: 14,
+    position: "relative",
+  },
+  editPhotoBtn: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: ACCENT,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
   },
   userName: {
     fontSize: 22,
     fontWeight: "700",
     color: "#0F172A",
   },
+  userRole: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: ACCENT,
+    marginTop: 3,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
   userEmail: {
-    fontSize: 15,
+    fontSize: 14,
     color: "#64748B",
     marginTop: 4,
   },
   editProfileBtn: {
     marginTop: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 9,
+    borderRadius: 20,
     backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
   editProfileText: {
     fontSize: 14,
@@ -244,11 +268,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   groupTitle: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 11,
+    fontWeight: "700",
     color: "#94A3B8",
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 1,
     marginBottom: 8,
     marginLeft: 4,
   },
@@ -263,45 +287,46 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   optionLeft: {
     flexDirection: "row",
     alignItems: "center",
   },
   iconBox: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     borderRadius: 10,
     backgroundColor: "#F0FDF4",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 14,
+    marginRight: 12,
   },
   optionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "500",
     color: "#1E293B",
   },
   divider: {
     height: 1,
     backgroundColor: "#F1F5F9",
-    marginLeft: 66,
+    marginLeft: 62,
   },
   logoutWrap: {
-    marginTop: 16,
+    marginTop: 4,
   },
   logoutButton: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
     borderWidth: 1,
     borderColor: RED_ACCENT,
-    padding: 16,
+    padding: 15,
     alignItems: "center",
   },
   logoutText: {
     color: RED_ACCENT,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
   },
 });

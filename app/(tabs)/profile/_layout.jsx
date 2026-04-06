@@ -2,12 +2,12 @@ import { Stack } from "expo-router";
 
 import { headerTitleStyle } from "../../../src/theme/fonts";
 
-export default function SettingsStack() {
+export default function ProfileStack() {
   return (
     <Stack
       screenOptions={{
         headerShown: true,
-        headerBackTitle: "Back",
+        headerBackTitle: "Profile",
         headerStyle: { backgroundColor: "#FFFFFF" },
         headerTintColor: "#0F172A",
         headerTitleStyle: { ...headerTitleStyle, color: "#0F172A" },
@@ -15,7 +15,8 @@ export default function SettingsStack() {
         contentStyle: { backgroundColor: "#F8FAFC", paddingBottom: 100 },
       }}
     >
-      <Stack.Screen name="index" options={{ title: "Settings" }} />
+      <Stack.Screen name="index" options={{ title: "Profile", headerShown: false }} />
+      <Stack.Screen name="settings" options={{ title: "Settings" }} />
     </Stack>
   );
 }
