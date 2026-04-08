@@ -10,222 +10,388 @@ import {
 } from "react-native";
 import {
   BellIcon,
-  GlobeAltIcon,
+  DevicePhoneMobileIcon,
+  DocumentTextIcon,
+  EnvelopeIcon,
+  EyeSlashIcon,
+  FingerPrintIcon,
+  KeyIcon,
+  LanguageIcon,
+  LockClosedIcon,
   MoonIcon,
-  ShieldCheckIcon,
+  TrashIcon
 } from "react-native-heroicons/outline";
 
-import { sansText, serifText } from "../../../src/theme/fonts";
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const C = {
+  accent: "#0F766E",
+  accentLight: "#F0FDFA",
+  accentMid: "#CCFBF1",
+  navy: "#0F172A",
+  slate: "#1E293B",
+  sub: "#64748B",
+  muted: "#94A3B8",
+  border: "#E2E8F0",
+  divider: "#F1F5F9",
+  bg: "#F8FAFC",
+  white: "#FFFFFF",
+  green: "#059669",
+  greenBg: "#DCFCE7",
+  red: "#DC2626",
+  redBg: "#FEE2E2",
+  amber: "#D97706",
+  amberBg: "#FEF3C7",
+  blue: "#0A66C2",
+  blueBg: "#EFF6FF",
+  purple: "#7C3AED",
+  purpleBg: "#F5F3FF",
+  orange: "#F97316",
+  orangeBg: "#FFF7ED",
+};
 
-const ACCENT = "#0F766E";
-const BG_LIGHT = "#F8FAFC";
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
-export default function SettingsScreen() {
-  const [darkMode, setDarkMode] = useState(false);
-  const [pushNotifs, setPushNotifs] = useState(true);
-  const [emailNotifs, setEmailNotifs] = useState(false);
-  const [biometric, setBiometric] = useState(false);
+// Solid square icon — matches profile index exactly
+function IconSquare({ icon: Icon, color, size = 36 }) {
+  return (
+    <View
+      style={[
+        s.iconSquare,
+        {
+          backgroundColor: color,
+          width: size,
+          height: size,
+          borderRadius: size * 0.27,
+        },
+      ]}
+    >
+      <Icon size={size * 0.44} color="#FFFFFF" strokeWidth={2} />
+    </View>
+  );
+}
 
-  const handleMockPress = (action) => {
-    Alert.alert("Coming soon", `${action} will be available shortly.`);
-  };
+function SectionHeader({ title }) {
+  return (
+    <View style={s.sectionHeaderRow}>
+      <View style={s.sectionBarAccent} />
+      <Text style={s.sectionTitle}>{title}</Text>
+    </View>
+  );
+}
 
-  const ToggleRow = ({ icon, title, subtitle, value, onValueChange }) => (
-    <View style={styles.toggleRow}>
-      <View style={styles.toggleLeft}>
-        <View style={styles.iconBox}>{icon}</View>
-        <View style={styles.toggleText}>
-          <Text style={[styles.toggleTitle, sansText()]}>{title}</Text>
-          {!!subtitle && (
-            <Text style={[styles.toggleSub, sansText()]}>{subtitle}</Text>
-          )}
+function ToggleRow({
+  icon: Icon,
+  iconColor,
+  title,
+  subtitle,
+  value,
+  onValueChange,
+}) {
+  return (
+    <View style={s.optionRow}>
+      <View style={s.optionLeft}>
+        <IconSquare icon={Icon} color={iconColor} size={36} />
+        <View style={s.optionTextWrap}>
+          <Text style={s.optionTitle}>{title}</Text>
+          {subtitle ? <Text style={s.optionSubtitle}>{subtitle}</Text> : null}
         </View>
       </View>
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: "#E2E8F0", true: ACCENT }}
-        thumbColor="#FFFFFF"
+        trackColor={{ false: C.border, true: C.accentMid }}
+        thumbColor={value ? C.accent : C.muted}
+        ios_backgroundColor={C.border}
       />
     </View>
   );
+}
 
-  const LinkRow = ({ icon, title, onPress }) => (
+function LinkRow({
+  icon: Icon,
+  iconColor,
+  title,
+  subtitle,
+  rightLabel,
+  onPress,
+  isDestructive = false,
+}) {
+  return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.linkRow, pressed && { backgroundColor: "#F8FAFC" }]}
+      style={({ pressed }) => [
+        s.optionRow,
+        pressed && { backgroundColor: C.divider },
+      ]}
     >
-      <View style={styles.toggleLeft}>
-        <View style={styles.iconBox}>{icon}</View>
-        <Text style={[styles.toggleTitle, sansText()]}>{title}</Text>
+      <View style={s.optionLeft}>
+        <IconSquare
+          icon={Icon}
+          color={isDestructive ? C.red : iconColor}
+          size={36}
+        />
+        <View style={s.optionTextWrap}>
+          <Text style={[s.optionTitle, isDestructive && { color: C.red }]}>
+            {title}
+          </Text>
+          {subtitle ? <Text style={s.optionSubtitle}>{subtitle}</Text> : null}
+        </View>
       </View>
-      <Text style={[styles.linkAction, sansText()]}>Change</Text>
+      {rightLabel ? <Text style={s.rightLabel}>{rightLabel}</Text> : null}
     </Pressable>
   );
+}
+
+function Divider() {
+  return <View style={s.divider} />;
+}
+
+function FormCard({ children }) {
+  return <View style={s.card}>{children}</View>;
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+export default function SettingsScreen() {
+  const [darkMode, setDarkMode] = useState(false);
+  const [pushNotifs, setPushNotifs] = useState(true);
+  const [emailNotifs, setEmailNotifs] = useState(false);
+  const [smsNotifs, setSmsNotifs] = useState(false);
+  const [biometric, setBiometric] = useState(false);
+  const [autoLock, setAutoLock] = useState(true);
+
+  const handleMockPress = (action) => {
+    Alert.alert("Coming soon", `${action} will be available shortly.`);
+  };
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-
-        {/* Appearance */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, sansText()]}>Appearance</Text>
-          <View style={styles.card}>
+    <View style={s.root}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={s.scroll}
+      >
+        {/* ── Appearance ── */}
+        <View style={s.section}>
+          <SectionHeader title="Appearance" />
+          <FormCard>
             <ToggleRow
-              icon={<MoonIcon size={18} color={ACCENT} />}
+              icon={MoonIcon}
+              iconColor={C.purple}
               title="Dark Mode"
               subtitle="Switch to dark colour scheme"
               value={darkMode}
               onValueChange={setDarkMode}
             />
-          </View>
+            <Divider />
+            <LinkRow
+              icon={LanguageIcon}
+              iconColor={C.blue}
+              title="Language"
+              subtitle="App display language"
+              rightLabel="English"
+              onPress={() => handleMockPress("Language")}
+            />
+          </FormCard>
         </View>
 
-        {/* Notifications */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, sansText()]}>Notifications</Text>
-          <View style={styles.card}>
+        {/* ── Notifications ── */}
+        <View style={s.section}>
+          <SectionHeader title="Notifications" />
+          <FormCard>
             <ToggleRow
-              icon={<BellIcon size={18} color={ACCENT} />}
+              icon={BellIcon}
+              iconColor={C.orange}
               title="Push Notifications"
               subtitle="In-app alerts & reminders"
               value={pushNotifs}
               onValueChange={setPushNotifs}
             />
-            <View style={styles.divider} />
+            <Divider />
             <ToggleRow
-              icon={<GlobeAltIcon size={18} color={ACCENT} />}
+              icon={EnvelopeIcon}
+              iconColor={C.blue}
               title="Email Notifications"
               subtitle="Summary emails & updates"
               value={emailNotifs}
               onValueChange={setEmailNotifs}
             />
-          </View>
+            <Divider />
+            <ToggleRow
+              icon={DevicePhoneMobileIcon}
+              iconColor={C.green}
+              title="SMS Alerts"
+              subtitle="Critical attendance alerts via SMS"
+              value={smsNotifs}
+              onValueChange={setSmsNotifs}
+            />
+          </FormCard>
         </View>
 
-        {/* Security */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, sansText()]}>Security</Text>
-          <View style={styles.card}>
+        {/* ── Security ── */}
+        <View style={s.section}>
+          <SectionHeader title="Security" />
+          <FormCard>
             <ToggleRow
-              icon={<ShieldCheckIcon size={18} color={ACCENT} />}
+              icon={FingerPrintIcon}
+              iconColor={C.green}
               title="Biometric Login"
-              subtitle="Face ID / Touch ID"
+              subtitle="Face ID / Touch ID on launch"
               value={biometric}
               onValueChange={setBiometric}
             />
-            <View style={styles.divider} />
+            <Divider />
+            <ToggleRow
+              icon={LockClosedIcon}
+              iconColor={C.amber}
+              title="Auto-Lock"
+              subtitle="Lock app after 5 min of inactivity"
+              value={autoLock}
+              onValueChange={setAutoLock}
+            />
+            <Divider />
             <LinkRow
-              icon={<ShieldCheckIcon size={18} color={ACCENT} />}
+              icon={KeyIcon}
+              iconColor={C.purple}
               title="Change Password"
+              subtitle="Update your login credentials"
               onPress={() => handleMockPress("Change Password")}
             />
-          </View>
+          </FormCard>
         </View>
 
-        {/* App Info */}
-        <View style={styles.appInfo}>
-          <Text style={[styles.appVersion, sansText()]}>HR360 · Version 1.0.0</Text>
-          <Text style={[styles.appCopyright, sansText()]}>© 2026 HR360. All rights reserved.</Text>
+        {/* ── Data & Privacy ── */}
+        <View style={s.section}>
+          <SectionHeader title="Data & Privacy" />
+          <FormCard>
+            <LinkRow
+              icon={EyeSlashIcon}
+              iconColor={C.blue}
+              title="Privacy Policy"
+              subtitle="How we handle your data"
+              onPress={() => handleMockPress("Privacy Policy")}
+            />
+            <Divider />
+            <LinkRow
+              icon={DocumentTextIcon}
+              iconColor={C.slate}
+              title="Terms of Service"
+              subtitle="Usage terms and conditions"
+              onPress={() => handleMockPress("Terms of Service")}
+            />
+            <Divider />
+            <LinkRow
+              icon={TrashIcon}
+              title="Delete Account"
+              subtitle="Permanently remove your account"
+              onPress={() =>
+                Alert.alert(
+                  "Delete Account",
+                  "This action is permanent and cannot be undone. Please contact your HR administrator.",
+                  [{ text: "OK" }],
+                )
+              }
+              isDestructive
+            />
+          </FormCard>
         </View>
 
-        <View style={{ height: 80 }} />
+        {/* ── App Info ── */}
+        <View style={s.appInfo}>
+          <Text style={s.appVersion}>HR360 · Version 1.0.0</Text>
+          <Text style={s.appBuild}>Build 2026.04.08</Text>
+          <Text style={s.appCopyright}>© 2026 HR360. All rights reserved.</Text>
+        </View>
+
+        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BG_LIGHT,
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: C.bg },
+  scroll: { paddingBottom: 20 },
+  section: { paddingHorizontal: 16, marginTop: 20 },
+
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 10,
   },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  section: {
-    marginBottom: 24,
+  sectionBarAccent: {
+    width: 3,
+    height: 16,
+    borderRadius: 2,
+    backgroundColor: C.accent,
   },
   sectionTitle: {
     fontSize: 11,
-    fontWeight: "700",
-    color: "#94A3B8",
+    fontWeight: "800",
+    color: C.sub,
     textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 8,
-    marginLeft: 4,
+    letterSpacing: 0.8,
   },
+
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.white,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: C.border,
     overflow: "hidden",
-  },
-  iconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: "#F0FDF4",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  toggleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  toggleLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  toggleText: {
-    flex: 1,
-  },
-  toggleTitle: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#1E293B",
-  },
-  toggleSub: {
-    fontSize: 12,
-    color: "#94A3B8",
-    marginTop: 2,
-  },
-  linkRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  linkAction: {
-    fontSize: 14,
-    color: ACCENT,
-    fontWeight: "600",
   },
   divider: {
     height: 1,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: C.divider,
     marginLeft: 62,
   },
+
+  optionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    gap: 8,
+  },
+  optionLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  optionTextWrap: { flex: 1 },
+  optionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: C.navy,
+    letterSpacing: -0.1,
+  },
+  optionSubtitle: {
+    fontSize: 11,
+    fontWeight: "500",
+    color: C.muted,
+    marginTop: 2,
+  },
+  rightLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: C.muted,
+    marginRight: 4,
+  },
+
+  iconSquare: {
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+
   appInfo: {
     alignItems: "center",
-    marginTop: 8,
-    marginBottom: 16,
-    gap: 4,
+    marginTop: 28,
+    gap: 3,
   },
-  appVersion: {
-    fontSize: 13,
-    color: "#CBD5E1",
-  },
-  appCopyright: {
-    fontSize: 11,
-    color: "#CBD5E1",
-  },
+  appVersion: { fontSize: 12, color: C.muted, fontWeight: "600" },
+  appBuild: { fontSize: 11, color: C.border, fontWeight: "500" },
+  appCopyright: { fontSize: 11, color: C.border, fontWeight: "500" },
 });

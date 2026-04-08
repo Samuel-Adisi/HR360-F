@@ -1,9 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   Alert,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,56 +12,200 @@ import {
   View,
 } from "react-native";
 import {
+  ArrowRightOnRectangleIcon,
+  BanknotesIcon,
   BellIcon,
+  BuildingOffice2Icon,
+  CalendarDaysIcon,
   ChevronRightIcon,
   Cog6ToothIcon,
+  EnvelopeIcon,
+  IdentificationIcon,
   LockClosedIcon,
   PencilSquareIcon,
+  PhoneIcon,
   QuestionMarkCircleIcon,
-  UserIcon,
+  ShieldCheckIcon,
+  UserGroupIcon
 } from "react-native-heroicons/outline";
+import { ProfileHeaderTitle } from "./_layout";
 
-import { ProfileAvatar } from "../../../src/components/ProfileAvatar";
-import { monoText, sansText, serifText } from "../../../src/theme/fonts";
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const C = {
+  accent: "#0F766E",
+  accentLight: "#F0FDFA",
+  accentMid: "#CCFBF1",
+  navy: "#0F172A",
+  slate: "#1E293B",
+  sub: "#64748B",
+  muted: "#94A3B8",
+  border: "#E2E8F0",
+  divider: "#F1F5F9",
+  bg: "#F8FAFC",
+  white: "#FFFFFF",
+  green: "#059669",
+  greenBg: "#DCFCE7",
+  greenText: "#15803D",
+  red: "#DC2626",
+  redBg: "#FEE2E2",
+  redText: "#B91C1C",
+  amber: "#D97706",
+  amberBg: "#FEF3C7",
+  amberText: "#92400E",
+  blue: "#0A66C2",
+  blueBg: "#EFF6FF",
+  purple: "#7C3AED",
+  purpleBg: "#F5F3FF",
+  orange: "#F97316",
+  orangeBg: "#FFF7ED",
+};
 
-const ACCENT = "#0F766E";
-const RED_ACCENT = "#E11D48";
-const BG_LIGHT = "#F8FAFC";
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function getAvatarUri(nameHint, uriFromStorage) {
+  if (uriFromStorage) return uriFromStorage;
+  return `https://api.dicebear.com/7.x/initials/png?seed=${encodeURIComponent(
+    nameHint || "U",
+  )}&backgroundColor=0F766E&textColor=ffffff&fontSize=38`;
+}
 
+// Solid square icon — exactly like employee detail screen
+function IconSquare({ icon: Icon, color, size = 34 }) {
+  return (
+    <View
+      style={[
+        p.iconSquare,
+        {
+          backgroundColor: color,
+          width: size,
+          height: size,
+          borderRadius: size * 0.27,
+        },
+      ]}
+    >
+      <Icon size={size * 0.44} color="#FFFFFF" strokeWidth={2} />
+    </View>
+  );
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+function GroupLabel({ title }) {
+  return <Text style={p.groupLabel}>{title}</Text>;
+}
+
+function InfoRow({ icon: Icon, iconColor, label, value, last }) {
+  return (
+    <>
+      <View style={p.row}>
+        <IconSquare icon={Icon} color={iconColor} size={34} />
+        <View style={p.rowTexts}>
+          <Text style={p.rowLabel}>{label}</Text>
+          <Text style={p.rowValue} numberOfLines={1}>
+            {value || "—"}
+          </Text>
+        </View>
+      </View>
+      {!last && <View style={p.rowDivider} />}
+    </>
+  );
+}
+
+function NavRow({
+  icon: Icon,
+  iconColor,
+  title,
+  subtitle,
+  onPress,
+  isDestructive,
+  rightLabel,
+  last,
+}) {
+  return (
+    <>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [
+          p.row,
+          pressed && { backgroundColor: C.divider },
+        ]}
+      >
+        <IconSquare
+          icon={Icon}
+          color={isDestructive ? C.red : iconColor}
+          size={34}
+        />
+        <View style={p.rowTexts}>
+          <Text style={[p.rowTitle, isDestructive && { color: C.red }]}>
+            {title}
+          </Text>
+          {subtitle ? <Text style={p.rowSubtitle}>{subtitle}</Text> : null}
+        </View>
+        {isDestructive ? null : (
+          <View style={p.rowRight}>
+            {rightLabel ? (
+              <Text style={p.rowRightLabel}>{rightLabel}</Text>
+            ) : null}
+            <ChevronRightIcon size={16} color={C.muted} strokeWidth={2.5} />
+          </View>
+        )}
+      </Pressable>
+      {!last && <View style={p.rowDivider} />}
+    </>
+  );
+}
+
+function Card({ children }) {
+  return <View style={p.card}>{children}</View>;
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ProfileHome() {
-  const [username, setUsername] = useState("");
+  const navigation = useNavigation();
+
+  const [username, setUsername] = useState("Kwame Asante");
   const [avatarUri, setAvatarUri] = useState(null);
-  const [emailHint, setEmailHint] = useState("");
-  const [role, setRole] = useState("");
+  const [email, setEmail] = useState("kwame.asante@hr360.io");
+  const [role, setRole] = useState("Lead Backend Engineer");
+  const [phone, setPhone] = useState("+233 24 567 8901");
+  const [department, setDepartment] = useState("Engineering");
+  const [employeeId, setEmployeeId] = useState("EMP-0001");
+  const [hireDate, setHireDate] = useState("2021-03-08");
 
   const loadUser = useCallback(async () => {
     try {
       const name = await AsyncStorage.getItem("username");
-      setUsername(name || "User");
+      if (name) setUsername(name);
       const raw = await AsyncStorage.getItem("user");
       if (raw) {
-        try {
-          const u = JSON.parse(raw);
-          const pic = u.avatar || u.photo || u.profile_picture || null;
-          setAvatarUri(typeof pic === "string" && pic.length ? pic : null);
-          setEmailHint(u.email || "user@company.com");
-          setRole(u.role || u.position || "");
-        } catch {
-          setEmailHint("user@company.com");
-        }
-      } else {
-        setEmailHint("user@company.com");
+        const u = JSON.parse(raw);
+        const pic = u.avatar || u.photo || u.profile_picture || null;
+        setAvatarUri(typeof pic === "string" && pic.length ? pic : null);
+        if (u.email) setEmail(u.email);
+        if (u.role || u.position) setRole(u.role || u.position);
+        if (u.phone) setPhone(u.phone);
+        if (u.department?.name || u.department)
+          setDepartment(u.department?.name || u.department);
+        if (u.employee_id) setEmployeeId(u.employee_id);
+        if (u.hire_date) setHireDate(u.hire_date);
       }
-    } catch {
-      setUsername("User");
-    }
+    } catch {}
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       loadUser();
-    }, [loadUser])
+    }, [loadUser]),
   );
+
+  useFocusEffect(
+    useCallback(() => {
+      navigation.setOptions({
+        headerTitle: () => <ProfileHeaderTitle name={username} role={role} />,
+      });
+    }, [username, role]),
+  );
+
+  const mock = (action) =>
+    Alert.alert("Coming soon", `${action} will be available shortly.`);
 
   const confirmSignOut = () => {
     Alert.alert("Sign out", "Are you sure you want to end your session?", [
@@ -81,252 +226,361 @@ export default function ProfileHome() {
     ]);
   };
 
-  const handleMockPress = (action) => {
-    Alert.alert("Coming soon", `${action} will be available shortly.`);
-  };
-
-  const OptionRow = ({ icon, title, isDestructive = false, onPress }) => (
-    <View>
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => [styles.optionRow, pressed && { backgroundColor: "#F1F5F9" }]}
-      >
-        <View style={styles.optionLeft}>
-          <View style={[styles.iconBox, isDestructive && { backgroundColor: "#FFF1F2" }]}>
-            {icon}
-          </View>
-          <Text style={[styles.optionTitle, sansText(), isDestructive && { color: RED_ACCENT }]}>
-            {title}
-          </Text>
-        </View>
-        {!isDestructive && <ChevronRightIcon size={20} color="#CBD5E1" />}
-      </Pressable>
-    </View>
-  );
+  const avatarSource = { uri: getAvatarUri(username, avatarUri) };
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-
-        {/* Profile Hero Section */}
-        <View style={styles.profileSection}>
-          <View style={styles.avatarWrap}>
-            <ProfileAvatar
-              uri={avatarUri}
-              nameHint={username}
-              outerSize={88}
-              onPress={() => handleMockPress("Change photo")}
-            />
+    <View style={p.root}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={p.scroll}
+      >
+        {/* ── Hero — WhatsApp style: large centered avatar + name + role ── */}
+        <View style={p.hero}>
+          <View style={p.avatarWrap}>
+            <Image source={avatarSource} style={p.avatar} resizeMode="cover" />
             <Pressable
-              style={styles.editPhotoBtn}
-              onPress={() => handleMockPress("Change photo")}
+              style={p.editPhotoBtn}
+              onPress={() => mock("Change photo")}
             >
-              <PencilSquareIcon size={14} color="#FFFFFF" />
+              <PencilSquareIcon size={13} color={C.white} strokeWidth={2.5} />
             </Pressable>
           </View>
-          <Text style={[styles.userName, serifText()]}>{username}</Text>
-          {!!role && (
-            <Text style={[styles.userRole, sansText()]}>{role}</Text>
-          )}
-          <Text style={[styles.userEmail, sansText()]}>{emailHint}</Text>
+
+          <Text style={p.heroName}>{username}</Text>
+
+          <Text style={p.heroRole}>{role}</Text>
+
+          {/* Employee ID + dept chips — like WhatsApp's bio line */}
+          <View style={p.heroBioRow}>
+            <View style={p.bioChip}>
+              <IdentificationIcon size={11} color={C.sub} strokeWidth={2.5} />
+              <Text style={p.bioChipText}>{employeeId}</Text>
+            </View>
+            <View style={p.bioDot} />
+            <View style={p.bioChip}>
+              <BuildingOffice2Icon size={11} color={C.sub} strokeWidth={2.5} />
+              <Text style={p.bioChipText}>{department}</Text>
+            </View>
+          </View>
 
           <Pressable
-            style={({ pressed }) => [styles.editProfileBtn, pressed && { opacity: 0.8 }]}
-            onPress={() => handleMockPress("Edit Profile")}
+            style={({ pressed }) => [p.editBtn, pressed && { opacity: 0.8 }]}
+            onPress={() => mock("Edit Profile")}
           >
-            <Text style={[styles.editProfileText, sansText()]}>Edit Profile</Text>
+            <PencilSquareIcon size={14} color={C.accent} strokeWidth={2.5} />
+            <Text style={p.editBtnText}>Edit Profile</Text>
           </Pressable>
         </View>
 
-        {/* Account */}
-        <View style={styles.optionsGroup}>
-          <Text style={[styles.groupTitle, sansText()]}>Account</Text>
-          <View style={styles.card}>
-            <OptionRow
-              title="Personal Information"
-              icon={<UserIcon size={20} color={ACCENT} />}
-              onPress={() => handleMockPress("Personal Info")}
-            />
-            <View style={styles.divider} />
-            <OptionRow
-              title="Push Notifications"
-              icon={<BellIcon size={20} color={ACCENT} />}
-              onPress={() => handleMockPress("Notifications")}
-            />
-          </View>
-        </View>
+        {/* ── Personal Details ── */}
+        <GroupLabel title="Personal Details" />
+        <Card>
+          <InfoRow
+            icon={EnvelopeIcon}
+            iconColor={C.blue}
+            label="Email Address"
+            value={email}
+          />
+          <InfoRow
+            icon={PhoneIcon}
+            iconColor={C.green}
+            label="Phone Number"
+            value={phone}
+          />
+          <InfoRow
+            icon={BuildingOffice2Icon}
+            iconColor={C.accent}
+            label="Department"
+            value={department}
+          />
+          <InfoRow
+            icon={IdentificationIcon}
+            iconColor={C.purple}
+            label="Employee ID"
+            value={employeeId}
+          />
+          <InfoRow
+            icon={CalendarDaysIcon}
+            iconColor={C.amber}
+            label="Hire Date"
+            value={hireDate}
+            last
+          />
+        </Card>
 
-        {/* Security */}
-        <View style={styles.optionsGroup}>
-          <Text style={[styles.groupTitle, sansText()]}>Security</Text>
-          <View style={styles.card}>
-            <OptionRow
-              title="Change Password"
-              icon={<LockClosedIcon size={20} color={ACCENT} />}
-              onPress={() => handleMockPress("Change Password")}
-            />
-          </View>
-        </View>
+        {/* ── Account ── */}
+        <GroupLabel title="Account" />
+        <Card>
+          <NavRow
+            icon={UserGroupIcon}
+            iconColor={C.accent}
+            title="Personal Information"
+            subtitle="Update your name, photo & bio"
+            onPress={() => mock("Personal Info")}
+          />
+          <NavRow
+            icon={BellIcon}
+            iconColor={C.orange}
+            title="Notifications"
+            subtitle="Manage push & email alerts"
+            onPress={() => mock("Notifications")}
+          />
+          <NavRow
+            icon={BanknotesIcon}
+            iconColor={C.green}
+            title="Payroll & Compensation"
+            subtitle="View salary & payment details"
+            onPress={() => mock("Payroll")}
+            last
+          />
+        </Card>
 
-        {/* App Settings — navigates into the settings sub-screen */}
-        <View style={styles.optionsGroup}>
-          <Text style={[styles.groupTitle, sansText()]}>App</Text>
-          <View style={styles.card}>
-            <OptionRow
-              title="Settings"
-              icon={<Cog6ToothIcon size={20} color={ACCENT} />}
-              onPress={() => router.push("/profile/settings")}
-            />
-            <View style={styles.divider} />
-            <OptionRow
-              title="Help Center"
-              icon={<QuestionMarkCircleIcon size={20} color={ACCENT} />}
-              onPress={() => handleMockPress("Help Center")}
-            />
-          </View>
-        </View>
+        {/* ── Security ── */}
+        <GroupLabel title="Security" />
+        <Card>
+          <NavRow
+            icon={LockClosedIcon}
+            iconColor={C.purple}
+            title="Change Password"
+            subtitle="Update your login credentials"
+            onPress={() => mock("Change Password")}
+          />
+          <NavRow
+            icon={ShieldCheckIcon}
+            iconColor={C.green}
+            title="Two-Factor Authentication"
+            subtitle="Add an extra layer of security"
+            rightLabel="Off"
+            onPress={() => mock("2FA")}
+          />
+          <NavRow
+            icon={ShieldCheckIcon}
+            iconColor={C.blue}
+            title="Biometric Login"
+            subtitle="Face ID / Touch ID"
+            rightLabel="On"
+            onPress={() => mock("Biometrics")}
+            last
+          />
+        </Card>
 
-        {/* Sign Out */}
-        <View style={styles.logoutWrap}>
-          <Pressable
+        {/* ── App ── */}
+        <GroupLabel title="App" />
+        <Card>
+          <NavRow
+            icon={Cog6ToothIcon}
+            iconColor={C.slate}
+            title="Settings"
+            subtitle="Appearance, language & more"
+            onPress={() => router.push("/profile/settings")}
+          />
+          <NavRow
+            icon={QuestionMarkCircleIcon}
+            iconColor={C.blue}
+            title="Help & Support"
+            subtitle="FAQs and contact support"
+            onPress={() => mock("Help Center")}
+            last
+          />
+        </Card>
+
+        {/* ── Sign Out ── */}
+        <GroupLabel title="" />
+        <Card>
+          <NavRow
+            icon={ArrowRightOnRectangleIcon}
+            title="Sign Out"
+            subtitle="End your current session"
             onPress={confirmSignOut}
-            style={({ pressed }) => [styles.logoutButton, pressed && { opacity: 0.8 }]}
-          >
-            <Text style={[styles.logoutText, sansText()]}>Sign Out</Text>
-          </Pressable>
+            isDestructive
+            last
+          />
+        </Card>
+
+        <View style={p.appInfo}>
+          <Text style={p.appVersion}>HR360 · Version 1.0.0</Text>
+          <Text style={p.appCopyright}>© 2026 HR360. All rights reserved.</Text>
         </View>
 
-        <View style={{ height: 80 }} />
+        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BG_LIGHT,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 72,
-  },
-  profileSection: {
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const p = StyleSheet.create({
+  root: { flex: 1, backgroundColor: C.bg },
+  scroll: { paddingBottom: 20 },
+
+  // Hero — WhatsApp style
+  hero: {
+    backgroundColor: C.white,
     alignItems: "center",
-    marginBottom: 32,
+    paddingTop: 32,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    marginBottom: 24,
   },
   avatarWrap: {
-    marginBottom: 14,
     position: "relative",
+    marginBottom: 14,
+  },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: C.divider,
   },
   editPhotoBtn: {
     position: "absolute",
-    bottom: 2,
-    right: 2,
+    bottom: 3,
+    right: 3,
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: ACCENT,
+    backgroundColor: C.accent,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#FFFFFF",
+    borderWidth: 2.5,
+    borderColor: C.white,
   },
-  userName: {
+  heroName: {
     fontSize: 22,
-    fontWeight: "700",
-    color: "#0F172A",
+    fontWeight: "800",
+    color: C.navy,
+    letterSpacing: -0.5,
+    marginBottom: 4,
   },
-  userRole: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: ACCENT,
-    marginTop: 3,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  userEmail: {
+  heroRole: {
     fontSize: 14,
-    color: "#64748B",
-    marginTop: 4,
+    fontWeight: "500",
+    color: C.sub,
+    marginBottom: 12,
   },
-  editProfileBtn: {
-    marginTop: 16,
+  heroBioRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 18,
+  },
+  bioChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  bioChipText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: C.sub,
+  },
+  bioDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: C.muted,
+  },
+  editBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     paddingHorizontal: 20,
     paddingVertical: 9,
     borderRadius: 20,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: C.accentLight,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: C.accentMid,
   },
-  editProfileText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#0F172A",
-  },
-  optionsGroup: {
-    marginBottom: 24,
-  },
-  groupTitle: {
-    fontSize: 11,
+  editBtnText: {
+    fontSize: 13,
     fontWeight: "700",
-    color: "#94A3B8",
-    textTransform: "uppercase",
-    letterSpacing: 1,
+    color: C.accent,
+  },
+
+  // Group label — like WhatsApp's "Settings" grey label
+  groupLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: C.sub,
+    marginHorizontal: 20,
     marginBottom: 8,
-    marginLeft: 4,
-  },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    overflow: "hidden",
-  },
-  optionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  optionLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  iconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: "#F0FDF4",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  optionTitle: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#1E293B",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#F1F5F9",
-    marginLeft: 62,
-  },
-  logoutWrap: {
     marginTop: 4,
   },
-  logoutButton: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: RED_ACCENT,
-    padding: 15,
-    alignItems: "center",
+
+  // Card
+  card: {
+    backgroundColor: C.white,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: C.border,
+    marginBottom: 24,
   },
-  logoutText: {
-    color: RED_ACCENT,
+
+  // Row divider — starts after icon, like WhatsApp
+  rowDivider: {
+    height: 1,
+    backgroundColor: C.divider,
+    marginLeft: 62,
+  },
+
+  // Shared row layout
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    gap: 14,
+  },
+  rowTexts: { flex: 1 },
+  rowLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: C.muted,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  rowValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: C.navy,
+  },
+  rowTitle: {
     fontSize: 15,
     fontWeight: "600",
+    color: C.navy,
   },
+  rowSubtitle: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: C.muted,
+    marginTop: 2,
+  },
+  rowRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  rowRightLabel: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: C.muted,
+  },
+
+  // Icon square — solid fill, exactly like employee detail
+  iconSquare: {
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+
+  // App footer
+  appInfo: {
+    alignItems: "center",
+    marginTop: 8,
+    gap: 3,
+  },
+  appVersion: { fontSize: 12, color: C.muted, fontWeight: "500" },
+  appCopyright: { fontSize: 11, color: C.border, fontWeight: "500" },
 });

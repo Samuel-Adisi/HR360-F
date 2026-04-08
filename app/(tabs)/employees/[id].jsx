@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import {
   Linking,
   Pressable,
@@ -9,20 +10,67 @@ import {
   View,
 } from "react-native";
 import {
-  ArrowLeftIcon,
-  BuildingOfficeIcon,
+  BanknotesIcon,
+  BriefcaseIcon,
+  BuildingOffice2Icon,
   CalendarDaysIcon,
+  DevicePhoneMobileIcon,
   EnvelopeIcon,
+  ExclamationTriangleIcon,
   IdentificationIcon,
+  MapPinIcon,
   PencilSquareIcon,
   PhoneIcon,
+  UserCircleIcon,
   UserIcon,
 } from "react-native-heroicons/outline";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+// ─── Mock data — shape mirrors EmployeeSerializer exactly ─────────────────────
+const MOCK_EMPLOYEE = {
+  id: 2,
+  first_name: "James",
+  last_name: "Osei",
+  full_name: "James Osei",
+  email: "james.osei@hr360.io",
+  phone: "+233 24 567 8901",
+  date_of_birth: "1991-07-14",
+  address: "12 Ring Road East",
+  city: "Accra",
+  state: "Greater Accra",
+  zip_code: "GA-123",
+  profile_picture:
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80",
+  employee_id: "EMP-0002",
+  position: "Lead Backend Engineer",
+  department: "Engineering",
+  hire_date: "2021-03-08",
+  employment_type: "Full-Time",
+  work_location: "Hybrid",
+  manager: 1,
+  manager_name: "Alice Mensah",
+  salary: "12500.00",
+  pay_frequency: "Monthly",
+  payment_method: "Bank Transfer",
+  bank_name: "GCB Bank",
+  bank_account_number: "****4821",
+  bank_account_name: "James Kofi Osei",
+  bank_branch: "Accra Main",
+  momo_network: null,
+  momo_number: null,
+  emergency_contact: "Abena Osei",
+  emergency_phone: "+233 20 111 2233",
+  notes: "Strong performer. Led the migration to DRF 3.15 in Q1.",
+  is_active: true,
+  created_at: "2021-03-08T09:00:00Z",
+  updated_at: "2024-11-20T14:32:00Z",
+};
+
+// ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
   accent: "#0F766E",
   accentLight: "#F0FDFA",
+  accentMid: "#CCFBF1",
   navy: "#0F172A",
   slate: "#1E293B",
   sub: "#64748B",
@@ -37,214 +85,207 @@ const C = {
   red: "#DC2626",
   redBg: "#FEE2E2",
   redText: "#B91C1C",
+  amber: "#D97706",
+  amberBg: "#FEF3C7",
+  amberText: "#92400E",
+  blue: "#0A66C2",
+  purple: "#7C3AED",
+  orange: "#F97316",
 };
 
-const EMPLOYEES = {
-  1: {
-    name: "Sarah Mitchell",
-    title: "Senior Product Designer",
-    department: "Design",
-    status: "Active",
-    email: "sarah.mitchell@hr360.com",
-    phone: "+233 24 000 1111",
-    manager: "Alice Mensah",
-    joined: "Mar 14, 2021",
-    employeeId: "EMP-0001",
-    photo:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80",
-  },
-  2: {
-    name: "James Osei",
-    title: "Lead Backend Engineer",
-    department: "Engineering",
-    status: "Active",
-    email: "james.osei@hr360.com",
-    phone: "+233 24 000 2222",
-    manager: "Kofi Agyeman",
-    joined: "Jul 03, 2020",
-    employeeId: "EMP-0002",
-    photo:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80",
-  },
-  3: {
-    name: "Alice Mensah",
-    title: "HR Manager",
-    department: "Human Resources",
-    status: "Active",
-    email: "alice.mensah@hr360.com",
-    phone: "+233 24 000 3333",
-    manager: "—",
-    joined: "Jan 09, 2019",
-    employeeId: "EMP-0003",
-    photo:
-      "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&q=80",
-  },
-  4: {
-    name: "Robert Antwi",
-    title: "Marketing Lead",
-    department: "Marketing",
-    status: "Inactive",
-    email: "robert.antwi@hr360.com",
-    phone: "+233 24 000 4444",
-    manager: "Alice Mensah",
-    joined: "Sep 22, 2022",
-    employeeId: "EMP-0004",
-    photo:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80",
-  },
-  5: {
-    name: "Emily Boateng",
-    title: "Sales Executive",
-    department: "Sales",
-    status: "Active",
-    email: "emily.boateng@hr360.com",
-    phone: "+233 24 000 5555",
-    manager: "Robert Antwi",
-    joined: "Feb 11, 2023",
-    employeeId: "EMP-0005",
-    photo:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&q=80",
-  },
-  6: {
-    name: "Michael Darko",
-    title: "Frontend Engineer",
-    department: "Engineering",
-    status: "Active",
-    email: "michael.darko@hr360.com",
-    phone: "+233 24 000 6666",
-    manager: "James Osei",
-    joined: "Nov 30, 2022",
-    employeeId: "EMP-0006",
-    photo:
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80",
-  },
-  7: {
-    name: "Linda Asare",
-    title: "UX Researcher",
-    department: "Design",
-    status: "Active",
-    email: "linda.asare@hr360.com",
-    phone: "+233 24 000 7777",
-    manager: "Sarah Mitchell",
-    joined: "Apr 18, 2023",
-    employeeId: "EMP-0007",
-    photo:
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80",
-  },
-  8: {
-    name: "Daniel Kwame",
-    title: "Finance Analyst",
-    department: "Finance",
-    status: "Active",
-    email: "daniel.kwame@hr360.com",
-    phone: "+233 24 000 8888",
-    manager: "Alice Mensah",
-    joined: "Jun 05, 2021",
-    employeeId: "EMP-0008",
-    photo:
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80",
-  },
-  9: {
-    name: "Grace Amponsah",
-    title: "Operations Manager",
-    department: "Operations",
-    status: "Inactive",
-    email: "grace.amponsah@hr360.com",
-    phone: "+233 24 000 9999",
-    manager: "Alice Mensah",
-    joined: "Aug 14, 2020",
-    employeeId: "EMP-0009",
-    photo:
-      "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&q=80",
-  },
-  10: {
-    name: "Kofi Agyeman",
-    title: "DevOps Engineer",
-    department: "Engineering",
-    status: "Active",
-    email: "kofi.agyeman@hr360.com",
-    phone: "+233 24 000 1010",
-    manager: "James Osei",
-    joined: "Oct 01, 2019",
-    employeeId: "EMP-0010",
-    photo:
-      "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80",
-  },
+// ─── Icon color map — each field gets its own solid color ────────────────────
+// mirrors the dashboard's activity feed palette
+const ICON_COLORS = {
+  phone: C.green,
+  email: C.blue,
+  dob: C.purple,
+  address: C.accent,
+  hireDate: C.accent,
+  employmentType: C.blue,
+  workLocation: C.orange,
+  manager: C.purple,
+  salary: C.green,
+  paymentMethod: C.orange,
+  bank: C.blue,
+  accountName: C.accent,
+  accountNumber: C.slate,
+  momoNetwork: C.purple,
+  momoNumber: C.green,
+  emergencyName: C.red,
+  emergencyPhone: C.red,
 };
 
-// ─── Tappable contact action ──────────────────────────────────────────────────
-function ContactAction({ icon: Icon, label, value, onPress }) {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function fmt(dateStr) {
+  if (!dateStr) return "—";
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  });
+}
+
+function age(dobStr) {
+  if (!dobStr) return null;
+  const dob = new Date(dobStr);
+  const today = new Date();
+  let a = today.getFullYear() - dob.getFullYear();
+  if (
+    today.getMonth() < dob.getMonth() ||
+    (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
+  )
+    a--;
+  return a;
+}
+
+function initials(emp) {
+  return `${emp.first_name?.[0] ?? ""}${emp.last_name?.[0] ?? ""}`.toUpperCase();
+}
+
+function fmtSalary(raw) {
+  if (!raw) return "—";
+  const n = parseFloat(raw);
+  if (isNaN(n)) return raw;
+  return new Intl.NumberFormat("en-GH", {
+    style: "currency",
+    currency: "GHS",
+    minimumFractionDigits: 0,
+  }).format(n);
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function Avatar({ emp }) {
+  const [err, setErr] = useState(false);
+  if (emp.profile_picture && !err) {
+    return (
+      <Image
+        source={{ uri: emp.profile_picture }}
+        style={s.photo}
+        contentFit="cover"
+        transition={300}
+        onError={() => setErr(true)}
+      />
+    );
+  }
   return (
-    <Pressable
-      style={({ pressed }) => [
-        s.contactAction,
-        pressed && { opacity: 0.65, transform: [{ scale: 0.97 }] },
-      ]}
-      onPress={onPress}
-    >
-      <View style={s.contactIconWrap}>
-        <Icon size={18} color={C.accent} strokeWidth={2} />
-      </View>
-      <View style={s.contactText}>
-        <Text style={s.contactLabel}>{label}</Text>
-        <Text style={s.contactValue} numberOfLines={1}>
-          {value}
-        </Text>
-      </View>
-      <View style={s.contactArrow}>
-        <Text style={s.contactArrowText}>›</Text>
-      </View>
-    </Pressable>
+    <View style={[s.photo, s.avatarFallback]}>
+      <Text style={s.avatarInitials}>{initials(emp)}</Text>
+    </View>
   );
 }
 
-// ─── Info row inside a section card ──────────────────────────────────────────
-function InfoRow({ icon: Icon, label, value, last }) {
+function SectionHeader({ title }) {
+  return <Text style={s.sectionLabel}>{title}</Text>;
+}
+
+function InfoCard({ children }) {
+  return <View style={s.card}>{children}</View>;
+}
+
+// ── Dashboard-style solid square icon wrap ────────────────────────────────────
+function IconSquare({ icon: Icon, color }) {
+  return (
+    <View style={[s.iconSquare, { backgroundColor: color }]}>
+      <Icon size={15} color="#FFFFFF" strokeWidth={2} />
+    </View>
+  );
+}
+
+function InfoRow({ icon: Icon, iconColor = C.accent, label, value, last }) {
   return (
     <>
       <View style={s.infoRow}>
-        <View style={s.infoIconWrap}>
-          <Icon size={15} color={C.accent} strokeWidth={2} />
-        </View>
+        <IconSquare icon={Icon} color={iconColor} />
         <View style={s.infoTexts}>
           <Text style={s.infoLabel}>{label}</Text>
-          <Text style={s.infoValue}>{value}</Text>
+          <Text style={s.infoValue}>{value || "—"}</Text>
         </View>
       </View>
-      {!last && <View style={s.rowDivider} />}
+      {!last && <View style={s.rowDiv} />}
     </>
   );
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
+function ContactRow({
+  icon: Icon,
+  iconColor = C.accent,
+  label,
+  value,
+  onPress,
+  last,
+}) {
+  return (
+    <>
+      <Pressable
+        style={({ pressed }) => [
+          s.contactRow,
+          pressed && { opacity: 0.6, transform: [{ scale: 0.98 }] },
+        ]}
+        onPress={onPress}
+      >
+        <IconSquare icon={Icon} color={iconColor} />
+        <View style={s.infoTexts}>
+          <Text style={s.infoLabel}>{label}</Text>
+          <Text style={[s.infoValue, { color: iconColor }]}>
+            {value || "—"}
+          </Text>
+        </View>
+        <Text style={s.chevron}>›</Text>
+      </Pressable>
+      {!last && <View style={s.rowDiv} />}
+    </>
+  );
+}
+
+function StatPill({ label, value, color, bg }) {
+  return (
+    <View style={[s.statPill, { backgroundColor: bg }]}>
+      <Text style={[s.statValue, { color }]}>{value}</Text>
+      <Text style={[s.statLabel, { color }]}>{label}</Text>
+    </View>
+  );
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function EmployeeDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const emp = EMPLOYEES[id] ?? EMPLOYEES["1"];
-  const isActive = emp.status === "Active";
 
-  const callPhone = () =>
-    Linking.openURL(`tel:${emp.phone.replace(/\s/g, "")}`);
-  const openEmail = () => Linking.openURL(`mailto:${emp.email}`);
+  const emp = MOCK_EMPLOYEE;
+  const isActive = emp.is_active;
+  const empAge = age(emp.date_of_birth);
+  const fullAddress = [emp.address, emp.city, emp.state, emp.zip_code]
+    .filter(Boolean)
+    .join(", ");
+  const hasPaymentInfo =
+    emp.payment_method === "Mobile Money"
+      ? emp.momo_number
+      : emp.bank_account_number;
 
   return (
     <View style={s.root}>
-      {/* ── Nav bar ── */}
+      {/* ── Navbar ── */}
       <SafeAreaView edges={["top"]} style={s.navbar}>
         <Pressable
           style={({ pressed }) => [s.navBtn, pressed && { opacity: 0.6 }]}
-          onPress={() => router.back()}
+          onPress={() => router.replace("/employees")}
         >
-          <ArrowLeftIcon size={20} color={C.navy} strokeWidth={2.2} />
+          <Text style={s.backText}>‹</Text>
         </Pressable>
 
-        <Text style={s.navTitle}>Profile</Text>
+        <View style={s.navCenter}>
+          <View style={s.navBadge}>
+            <UserCircleIcon size={17} color={C.accent} strokeWidth={2} />
+          </View>
+          <Text style={s.navTitle}>Employee Profile</Text>
+        </View>
 
         <Pressable
           style={({ pressed }) => [s.navBtn, pressed && { opacity: 0.6 }]}
-          onPress={() => router.push(`/employees/${id}/edit`)}
+          onPress={() => router.push(`/employees/edit/${id}`)}
         >
-          <PencilSquareIcon size={20} color={C.accent} strokeWidth={2} />
+          <PencilSquareIcon size={19} color={C.accent} strokeWidth={2} />
         </Pressable>
       </SafeAreaView>
 
@@ -254,17 +295,10 @@ export default function EmployeeDetailScreen() {
       >
         {/* ── Hero ── */}
         <View style={s.hero}>
-          {/* Photo */}
           <View style={s.photoRing}>
-            <Image
-              source={{ uri: emp.photo }}
-              style={s.photo}
-              contentFit="cover"
-              transition={300}
-            />
+            <Avatar emp={emp} />
           </View>
 
-          {/* Status badge */}
           <View
             style={[
               s.statusBadge,
@@ -283,72 +317,254 @@ export default function EmployeeDetailScreen() {
                 { color: isActive ? C.greenText : C.redText },
               ]}
             >
-              {emp.status}
+              {isActive ? "Active" : "Inactive"}
             </Text>
           </View>
 
-          <Text style={s.heroName}>{emp.name}</Text>
-          <Text style={s.heroTitle}>{emp.title}</Text>
+          <Text style={s.heroName}>{emp.full_name}</Text>
+          <Text style={s.heroPos}>{emp.position}</Text>
 
-          {/* Dept pill */}
-          <View style={s.deptPill}>
-            <BuildingOfficeIcon size={12} color={C.accent} strokeWidth={2.5} />
-            <Text style={s.deptPillText}>{emp.department}</Text>
+          <View style={s.heroMeta}>
+            <View style={s.metaChip}>
+              <BuildingOffice2Icon
+                size={12}
+                color={C.accent}
+                strokeWidth={2.5}
+              />
+              <Text style={s.metaChipText}>{emp.department}</Text>
+            </View>
+            <View style={[s.metaChip, { backgroundColor: C.divider }]}>
+              <IdentificationIcon size={12} color={C.sub} strokeWidth={2.5} />
+              <Text style={[s.metaChipText, { color: C.sub }]}>
+                {emp.employee_id}
+              </Text>
+            </View>
+          </View>
+
+          <View style={s.statsRow}>
+            <StatPill
+              label="Work Location"
+              value={emp.work_location}
+              color={C.accent}
+              bg={C.accentLight}
+            />
+            <StatPill
+              label="Type"
+              value={emp.employment_type}
+              color={C.slate}
+              bg={C.divider}
+            />
+            <StatPill
+              label="Pay Freq."
+              value={emp.pay_frequency}
+              color={C.slate}
+              bg={C.divider}
+            />
           </View>
         </View>
 
         {/* ── Contact ── */}
         <View style={s.section}>
-          <Text style={s.sectionLabel}>Contact</Text>
-          <View style={s.card}>
-            <ContactAction
+          <SectionHeader title="CONTACT" />
+          <InfoCard>
+            <ContactRow
               icon={PhoneIcon}
+              iconColor={ICON_COLORS.phone}
               label="Phone"
               value={emp.phone}
-              onPress={callPhone}
+              onPress={() =>
+                emp.phone &&
+                Linking.openURL(`tel:${emp.phone.replace(/\s/g, "")}`)
+              }
             />
-            <View style={s.rowDivider} />
-            <ContactAction
+            <ContactRow
               icon={EnvelopeIcon}
+              iconColor={ICON_COLORS.email}
               label="Email"
               value={emp.email}
-              onPress={openEmail}
-            />
-          </View>
-        </View>
-
-        {/* ── Work details ── */}
-        <View style={s.section}>
-          <Text style={s.sectionLabel}>Employment</Text>
-          <View style={s.card}>
-            <InfoRow
-              icon={IdentificationIcon}
-              label="Employee ID"
-              value={emp.employeeId}
-            />
-            <InfoRow
-              icon={BuildingOfficeIcon}
-              label="Department"
-              value={emp.department}
-            />
-            <InfoRow icon={UserIcon} label="Reports to" value={emp.manager} />
-            <InfoRow
-              icon={CalendarDaysIcon}
-              label="Date Joined"
-              value={emp.joined}
+              onPress={() =>
+                emp.email && Linking.openURL(`mailto:${emp.email}`)
+              }
               last
             />
-          </View>
+          </InfoCard>
         </View>
 
-        <View style={{ height: 40 }} />
+        {/* ── Personal Info ── */}
+        <View style={s.section}>
+          <SectionHeader title="PERSONAL" />
+          <InfoCard>
+            <InfoRow
+              icon={CalendarDaysIcon}
+              iconColor={ICON_COLORS.dob}
+              label="Date of Birth"
+              value={
+                emp.date_of_birth
+                  ? `${fmt(emp.date_of_birth)}  ·  Age ${empAge}`
+                  : null
+              }
+            />
+            <InfoRow
+              icon={MapPinIcon}
+              iconColor={ICON_COLORS.address}
+              label="Address"
+              value={fullAddress || null}
+              last
+            />
+          </InfoCard>
+        </View>
+
+        {/* ── Employment ── */}
+        <View style={s.section}>
+          <SectionHeader title="EMPLOYMENT" />
+          <InfoCard>
+            <InfoRow
+              icon={CalendarDaysIcon}
+              iconColor={ICON_COLORS.hireDate}
+              label="Hire Date"
+              value={fmt(emp.hire_date)}
+            />
+            <InfoRow
+              icon={BriefcaseIcon}
+              iconColor={ICON_COLORS.employmentType}
+              label="Employment Type"
+              value={emp.employment_type}
+            />
+            <InfoRow
+              icon={BuildingOffice2Icon}
+              iconColor={ICON_COLORS.workLocation}
+              label="Work Location"
+              value={emp.work_location}
+            />
+            <InfoRow
+              icon={UserIcon}
+              iconColor={ICON_COLORS.manager}
+              label="Reports To"
+              value={emp.manager_name ?? "—"}
+              last
+            />
+          </InfoCard>
+        </View>
+
+        {/* ── Compensation ── */}
+        <View style={s.section}>
+          <SectionHeader title="COMPENSATION" />
+          <InfoCard>
+            <InfoRow
+              icon={BanknotesIcon}
+              iconColor={ICON_COLORS.salary}
+              label="Salary"
+              value={`${fmtSalary(emp.salary)} / ${emp.pay_frequency ?? ""}`}
+            />
+            <InfoRow
+              icon={IdentificationIcon}
+              iconColor={ICON_COLORS.paymentMethod}
+              label="Payment Method"
+              value={emp.payment_method}
+              last={!hasPaymentInfo}
+            />
+
+            {emp.payment_method !== "Mobile Money" && emp.bank_name && (
+              <>
+                <View style={s.rowDiv} />
+                <InfoRow
+                  icon={BuildingOffice2Icon}
+                  iconColor={ICON_COLORS.bank}
+                  label="Bank"
+                  value={`${emp.bank_name}${emp.bank_branch ? ` · ${emp.bank_branch}` : ""}`}
+                />
+                <InfoRow
+                  icon={IdentificationIcon}
+                  iconColor={ICON_COLORS.accountName}
+                  label="Account Name"
+                  value={emp.bank_account_name}
+                />
+                <InfoRow
+                  icon={IdentificationIcon}
+                  iconColor={ICON_COLORS.accountNumber}
+                  label="Account Number"
+                  value={emp.bank_account_number}
+                  last
+                />
+              </>
+            )}
+
+            {emp.payment_method === "Mobile Money" && emp.momo_number && (
+              <>
+                <View style={s.rowDiv} />
+                <InfoRow
+                  icon={DevicePhoneMobileIcon}
+                  iconColor={ICON_COLORS.momoNetwork}
+                  label="MoMo Network"
+                  value={emp.momo_network}
+                />
+                <InfoRow
+                  icon={PhoneIcon}
+                  iconColor={ICON_COLORS.momoNumber}
+                  label="MoMo Number"
+                  value={emp.momo_number}
+                  last
+                />
+              </>
+            )}
+          </InfoCard>
+        </View>
+
+        {/* ── Emergency Contact ── */}
+        <View style={s.section}>
+          <SectionHeader title="EMERGENCY CONTACT" />
+          <InfoCard>
+            <InfoRow
+              icon={UserIcon}
+              iconColor={ICON_COLORS.emergencyName}
+              label="Contact Name"
+              value={emp.emergency_contact}
+            />
+            <ContactRow
+              icon={PhoneIcon}
+              iconColor={ICON_COLORS.emergencyPhone}
+              label="Contact Phone"
+              value={emp.emergency_phone}
+              onPress={() =>
+                emp.emergency_phone &&
+                Linking.openURL(`tel:${emp.emergency_phone.replace(/\s/g, "")}`)
+              }
+              last
+            />
+          </InfoCard>
+        </View>
+
+        {/* ── Notes ── */}
+        {emp.notes ? (
+          <View style={s.section}>
+            <SectionHeader title="NOTES" />
+            <View style={s.notesCard}>
+              <ExclamationTriangleIcon
+                size={14}
+                color={C.amber}
+                strokeWidth={2}
+                style={{ marginBottom: 6 }}
+              />
+              <Text style={s.notesText}>{emp.notes}</Text>
+            </View>
+          </View>
+        ) : null}
+
+        {/* ── Meta ── */}
+        <View style={s.metaFooter}>
+          <Text style={s.metaFooterText}>
+            Created {fmt(emp.created_at)} · Updated {fmt(emp.updated_at)}
+          </Text>
+        </View>
+
+        <View style={{ height: 48 }} />
       </ScrollView>
     </View>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const PHOTO = 96;
+const PHOTO = 100;
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
@@ -359,99 +575,166 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 14,
+    paddingHorizontal: 18,
+    paddingTop: 6,
+    paddingBottom: 12,
     backgroundColor: C.white,
     borderBottomWidth: 1,
     borderBottomColor: C.border,
   },
   navBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 11,
     backgroundColor: "#F1F5F9",
     alignItems: "center",
     justifyContent: "center",
   },
-  navTitle: {
-    fontSize: 16,
-    fontWeight: "700",
+  backText: {
+    fontSize: 30,
     color: C.navy,
-    letterSpacing: -0.2,
+    fontWeight: "300",
+    lineHeight: 34,
+    marginTop: -2,
+  },
+  navCenter: { flexDirection: "row", alignItems: "center", gap: 9 },
+  navBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    backgroundColor: C.accentLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  navTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: C.navy,
+    letterSpacing: -0.3,
   },
 
   // Hero
   hero: {
     backgroundColor: C.white,
     alignItems: "center",
-    paddingTop: 32,
-    paddingBottom: 28,
+    paddingTop: 28,
+    paddingBottom: 24,
     borderBottomWidth: 1,
     borderBottomColor: C.border,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   photoRing: {
-    width: PHOTO + 6,
-    height: PHOTO + 6,
-    borderRadius: (PHOTO + 6) / 2,
-    borderWidth: 2,
+    width: PHOTO + 8,
+    height: PHOTO + 8,
+    borderRadius: (PHOTO + 8) / 2,
+    borderWidth: 2.5,
     borderColor: C.accent,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 14,
+    shadowColor: C.accent,
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
   photo: {
     width: PHOTO,
     height: PHOTO,
     borderRadius: PHOTO / 2,
-    backgroundColor: "#E2E8F0",
+    backgroundColor: C.accentMid,
+  },
+  avatarFallback: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarInitials: {
+    fontSize: 30,
+    fontWeight: "800",
+    color: C.accent,
+    letterSpacing: -0.5,
   },
   statusBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    paddingHorizontal: 10,
+    paddingHorizontal: 11,
     paddingVertical: 4,
     borderRadius: 20,
     marginBottom: 10,
   },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
-  statusText: { fontSize: 11, fontWeight: "700" },
+  statusText: { fontSize: 11, fontWeight: "800", letterSpacing: 0.3 },
   heroName: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "800",
     color: C.navy,
-    letterSpacing: -0.4,
-    marginBottom: 4,
+    letterSpacing: -0.5,
+    marginBottom: 3,
   },
-  heroTitle: {
+  heroPos: {
     fontSize: 13,
     color: C.sub,
     fontWeight: "500",
     marginBottom: 14,
   },
-  deptPill: {
+  heroMeta: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 20,
+    flexWrap: "wrap",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  metaChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
     backgroundColor: C.accentLight,
-    paddingHorizontal: 12,
+    paddingHorizontal: 11,
     paddingVertical: 5,
     borderRadius: 20,
   },
-  deptPillText: { fontSize: 12, fontWeight: "700", color: C.accent },
+  metaChipText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: C.accent,
+    letterSpacing: 0.1,
+  },
+
+  // Stats row
+  statsRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 20,
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  statPill: {
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 12,
+    minWidth: 90,
+  },
+  statValue: { fontSize: 13, fontWeight: "800", letterSpacing: -0.2 },
+  statLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    marginTop: 2,
+    opacity: 0.75,
+    letterSpacing: 0.2,
+  },
 
   // Sections
-  section: { paddingHorizontal: 20, marginBottom: 16 },
+  section: { paddingHorizontal: 18, marginBottom: 14 },
   sectionLabel: {
-    fontSize: 11,
-    fontWeight: "700",
+    fontSize: 10,
+    fontWeight: "800",
     color: C.muted,
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
+    letterSpacing: 1.2,
     marginBottom: 8,
-    marginLeft: 2,
+    marginLeft: 3,
   },
   card: {
     backgroundColor: C.white,
@@ -460,61 +743,78 @@ const s = StyleSheet.create({
     borderColor: C.border,
     overflow: "hidden",
   },
-  rowDivider: { height: 1, backgroundColor: C.divider, marginLeft: 52 },
+  rowDiv: { height: 1, backgroundColor: C.divider, marginLeft: 62 },
 
-  // Contact action row
-  contactAction: {
+  // Contact rows
+  contactRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
   },
-  contactIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: C.accentLight,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 14,
+  chevron: {
+    fontSize: 22,
+    color: "#CBD5E1",
+    fontWeight: "300",
+    lineHeight: 26,
+    marginLeft: 6,
   },
-  contactText: { flex: 1 },
-  contactLabel: {
-    fontSize: 11,
-    color: C.muted,
-    fontWeight: "600",
-    marginBottom: 2,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
-  contactValue: { fontSize: 14, color: C.navy, fontWeight: "600" },
-  contactArrow: { paddingLeft: 8 },
-  contactArrowText: { fontSize: 22, color: "#CBD5E1", lineHeight: 26 },
 
-  // Info row
+  // Info rows
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 13,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
   },
-  infoIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: C.accentLight,
+
+  // Dashboard-style solid square icon — replaces old iconWrap
+  iconSquare: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 14,
+    marginRight: 13,
+    flexShrink: 0,
   },
+
   infoTexts: { flex: 1 },
   infoLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: C.muted,
-    fontWeight: "600",
+    fontWeight: "700",
     marginBottom: 2,
     textTransform: "uppercase",
-    letterSpacing: 0.4,
+    letterSpacing: 0.5,
   },
-  infoValue: { fontSize: 14, color: C.navy, fontWeight: "600" },
+  infoValue: {
+    fontSize: 14,
+    color: C.navy,
+    fontWeight: "600",
+    lineHeight: 19,
+  },
+
+  // Notes
+  notesCard: {
+    backgroundColor: C.amberBg,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+    padding: 16,
+  },
+  notesText: {
+    fontSize: 13,
+    color: C.amberText,
+    fontWeight: "500",
+    lineHeight: 20,
+  },
+
+  // Footer
+  metaFooter: { alignItems: "center", marginTop: 8 },
+  metaFooterText: {
+    fontSize: 11,
+    color: C.muted,
+    fontWeight: "500",
+  },
 });
