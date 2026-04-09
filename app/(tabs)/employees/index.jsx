@@ -48,7 +48,7 @@ const DEPARTMENTS = [
   "Finance",
   "Operations",
 ];
-
+const STATUSES = ["All", "Active", "Inactive"];
 const EMPLOYEES = [
   {
     id: "1",
@@ -143,7 +143,14 @@ const EMPLOYEES = [
 ];
 
 // ─── Filter Bottom Sheet ──────────────────────────────────────────────────────
-function FilterSheet({ visible, selected, onSelect, onClose }) {
+function FilterSheet({
+  visible,
+  selected,
+  onSelect,
+  selectedStatus,
+  onSelectStatus,
+  onClose,
+}) {
   return (
     <Modal
       visible={visible}
@@ -157,14 +164,16 @@ function FilterSheet({ visible, selected, onSelect, onClose }) {
 
           <View style={s.sheetHeaderRow}>
             <View>
-              <Text style={s.sheetTitle}>Department</Text>
-              <Text style={s.sheetSub}>Filter employees by team</Text>
+              <Text style={s.sheetTitle}>Filters</Text>
+              <Text style={s.sheetSub}>Narrow down your employee list</Text>
             </View>
             <Pressable onPress={onClose} style={s.sheetCloseIcon}>
               <XMarkIcon size={18} color={C.sub} />
             </Pressable>
           </View>
 
+          {/* Department */}
+          <Text style={s.sheetSectionLabel}>DEPARTMENT</Text>
           <View style={s.deptList}>
             {DEPARTMENTS.map((dept) => {
               const active = selected === dept;
@@ -176,13 +185,50 @@ function FilterSheet({ visible, selected, onSelect, onClose }) {
                     active && s.deptRowActive,
                     pressed && { opacity: 0.65 },
                   ]}
-                  onPress={() => {
-                    onSelect(dept);
-                    onClose();
-                  }}
+                  onPress={() => onSelect(dept)}
                 >
                   <Text style={[s.deptRowText, active && s.deptRowTextActive]}>
                     {dept}
+                  </Text>
+                  {active && (
+                    <View style={s.checkCircle}>
+                      <CheckIcon size={12} color={C.white} strokeWidth={3} />
+                    </View>
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* Status */}
+          <Text style={[s.sheetSectionLabel, { marginTop: 18 }]}>STATUS</Text>
+          <View style={s.deptList}>
+            {STATUSES.map((status) => {
+              const active = selectedStatus === status;
+              const color =
+                status === "Active"
+                  ? C.greenText
+                  : status === "Inactive"
+                    ? C.redText
+                    : C.sub;
+              return (
+                <Pressable
+                  key={status}
+                  style={({ pressed }) => [
+                    s.deptRow,
+                    active && s.deptRowActive,
+                    pressed && { opacity: 0.65 },
+                  ]}
+                  onPress={() => onSelectStatus(status)}
+                >
+                  <Text
+                    style={[
+                      s.deptRowText,
+                      active && s.deptRowTextActive,
+                      { color: active ? C.accent : color },
+                    ]}
+                  >
+                    {status}
                   </Text>
                   {active && (
                     <View style={s.checkCircle}>
@@ -217,12 +263,6 @@ function EmployeeCard({ item, onPress }) {
           style={s.avatar}
           contentFit="cover"
           transition={250}
-        />
-        <View
-          style={[s.statusRing, { borderColor: isActive ? C.green : C.red }]}
-        />
-        <View
-          style={[s.statusDot, { backgroundColor: isActive ? C.green : C.red }]}
         />
       </View>
 
@@ -262,6 +302,8 @@ export default function EmployeesScreen() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [activeDept, setActiveDept] = useState("All");
+
+  const [activeStatus, setActiveStatus] = useState("All");
   const [filterVisible, setFilterVisible] = useState(false);
 
   const filtered = EMPLOYEES.filter((emp) => {
@@ -269,10 +311,11 @@ export default function EmployeesScreen() {
     const matchSearch =
       emp.name.toLowerCase().includes(q) || emp.title.toLowerCase().includes(q);
     const matchDept = activeDept === "All" || emp.department === activeDept;
-    return matchSearch && matchDept;
+    const matchStatus = activeStatus === "All" || emp.status === activeStatus;
+    return matchSearch && matchDept && matchStatus;
   });
 
-  const filterActive = activeDept !== "All";
+  const filterActive = activeDept !== "All" || activeStatus !== "All";
 
   const handleCardPress = useCallback(
     (id) => router.push(`/employees/${id}`),
@@ -352,12 +395,22 @@ export default function EmployeesScreen() {
         {/* Active dept chip */}
         {filterActive && (
           <View style={s.chipRow}>
-            <View style={s.activeChip}>
-              <Text style={s.activeChipText}>{activeDept}</Text>
-              <Pressable onPress={() => setActiveDept("All")} hitSlop={6}>
-                <XMarkIcon size={12} color={C.accent} strokeWidth={3} />
-              </Pressable>
-            </View>
+            {activeDept !== "All" && (
+              <View style={s.activeChip}>
+                <Text style={s.activeChipText}>{activeDept}</Text>
+                <Pressable onPress={() => setActiveDept("All")} hitSlop={6}>
+                  <XMarkIcon size={12} color={C.accent} strokeWidth={3} />
+                </Pressable>
+              </View>
+            )}
+            {activeStatus !== "All" && (
+              <View style={s.activeChip}>
+                <Text style={s.activeChipText}>{activeStatus}</Text>
+                <Pressable onPress={() => setActiveStatus("All")} hitSlop={6}>
+                  <XMarkIcon size={12} color={C.accent} strokeWidth={3} />
+                </Pressable>
+              </View>
+            )}
           </View>
         )}
       </SafeAreaView>
@@ -381,12 +434,21 @@ export default function EmployeesScreen() {
             <Text style={s.emptySub}>Try a different name or department</Text>
           </View>
         }
+        ListFooterComponent={
+          filtered.length > 0 ? (
+            <View style={s.footer}>
+              <Text style={s.footerText}>No more data</Text>
+            </View>
+          ) : null
+        }
       />
 
       <FilterSheet
         visible={filterVisible}
         selected={activeDept}
         onSelect={setActiveDept}
+        selectedStatus={activeStatus}
+        onSelectStatus={setActiveStatus}
         onClose={() => setFilterVisible(false)}
       />
     </View>
@@ -508,7 +570,7 @@ const s = StyleSheet.create({
   activeChipText: { fontSize: 12, fontWeight: "700", color: C.accent },
 
   // List
-  listContent: { backgroundColor: C.white, paddingBottom: 100 },
+  listContent: { backgroundColor: C.white, paddingBottom: 24 },
 
   // Card
   card: {
@@ -530,22 +592,7 @@ const s = StyleSheet.create({
     borderRadius: AVATAR / 2,
     backgroundColor: "#E2E8F0",
   },
-  statusRing: {
-    position: "absolute",
-    inset: -2,
-    borderRadius: (AVATAR + 4) / 2,
-    borderWidth: 2,
-  },
-  statusDot: {
-    position: "absolute",
-    bottom: 1,
-    right: 1,
-    width: 11,
-    height: 11,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: C.white,
-  },
+
   cardInfo: { flex: 1 },
   empName: {
     fontSize: 15,
@@ -640,5 +687,24 @@ const s = StyleSheet.create({
     backgroundColor: C.accent,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  footer: {
+    alignItems: "center",
+    paddingVertical: 24,
+  },
+  footerText: {
+    fontSize: 13,
+    color: C.muted,
+    fontWeight: "500",
+  },
+
+  sheetSectionLabel: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: C.muted,
+    letterSpacing: 1.2,
+    marginBottom: 8,
+    marginLeft: 4,
   },
 });

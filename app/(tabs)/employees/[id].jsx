@@ -295,9 +295,7 @@ export default function EmployeeDetailScreen() {
       >
         {/* ── Hero ── */}
         <View style={s.hero}>
-          <View style={s.photoRing}>
-            <Avatar emp={emp} />
-          </View>
+          <Avatar emp={emp} />
 
           <View
             style={[
@@ -579,23 +577,22 @@ const s = StyleSheet.create({
     paddingTop: 6,
     paddingBottom: 12,
     backgroundColor: C.white,
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
   },
   navBtn: {
     width: 38,
     height: 38,
     borderRadius: 11,
-    backgroundColor: "#F1F5F9",
     alignItems: "center",
     justifyContent: "center",
+    marginLeft: -10,
   },
   backText: {
-    fontSize: 30,
+    fontSize: 38, // was 30
     color: C.navy,
-    fontWeight: "300",
-    lineHeight: 34,
+    fontWeight: "350", // was "300"
+    lineHeight: 42,
     marginTop: -2,
+    marginLeft: -10,
   },
   navCenter: { flexDirection: "row", alignItems: "center", gap: 9 },
   navBadge: {
