@@ -154,22 +154,22 @@ function StatsBanner({ counts, total }) {
     {
       label: "Present",
       value: counts.Present,
-      gradientColors: ["#059669", "#047857"],
+      gradientColors: ["#0F172A", "#1E293B"],
     },
     {
       label: "Absent",
       value: counts.Absent,
-      gradientColors: ["#DC2626", "#B91C1C"],
+      gradientColors: ["#0F172A", "#1E293B"],
     },
     {
       label: "Late",
       value: counts.Late,
-      gradientColors: ["#D97706", "#B45309"],
+      gradientColors: ["#0F172A", "#1E293B"],
     },
     {
       label: "On Leave",
       value: counts["On Leave"],
-      gradientColors: ["#0A66C2", "#0953A8"],
+      gradientColors: ["#0F172A", "#1E293B"],
     },
   ];
 
@@ -486,7 +486,7 @@ const sb = StyleSheet.create({
     borderRadius: 3,
     overflow: "hidden",
   },
-  fill: { height: "100%", backgroundColor: "#0F766E", borderRadius: 3 },
+  fill: { height: "100%", backgroundColor: "#0A66C2", borderRadius: 3 },
   rateSmall: {
     fontSize: 10,
     color: "rgba(255,255,255,0.45)",

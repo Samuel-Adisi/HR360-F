@@ -509,7 +509,7 @@ export default function HRDashboard() {
               onPress={() => router.push("/payroll")}
             >
               <LinearGradient
-                colors={[ORANGE, "#EA6B00"]}
+                colors={["#0F172A", "#1E293B"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.infoBlockGradient}
@@ -538,7 +538,7 @@ export default function HRDashboard() {
               onPress={() => router.push("/recruitment")}
             >
               <LinearGradient
-                colors={[BLUE, "#0953A8"]}
+                colors={["#0F172A", "#1E293B"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.infoBlockGradient}

@@ -120,9 +120,9 @@ const INITIAL_ANNOUNCEMENTS = [
 
 const TYPE_META = {
   announcement: { color: C.accent, bg: C.accentLight, label: "Announcement" },
-  payroll: { color: C.purple, bg: "#F5F3FF", label: "Payroll" },
+  payroll: { color: C.sub, bg: C.divider, label: "Payroll" },
   leave_approved: { color: C.green, bg: C.greenBg, label: "Leave" },
-  general: { color: C.blue, bg: "#EFF6FF", label: "General" },
+  general: { color: C.sub, bg: C.divider, label: "General" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

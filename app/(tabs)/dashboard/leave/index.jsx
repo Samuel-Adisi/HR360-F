@@ -353,17 +353,17 @@ function StatsBanner({ stats }) {
     {
       label: "Approved",
       value: stats.approved,
-      gradientColors: [C.green, "#047857"],
+      gradientColors: ["#0F172A", "#1E293B"],
     },
     {
       label: "Pending",
       value: stats.pending,
-      gradientColors: [C.amber, "#B45309"],
+      gradientColors: ["#0F172A", "#1E293B"],
     },
     {
       label: "Rejected",
       value: stats.rejected,
-      gradientColors: [C.red, "#B91C1C"],
+      gradientColors: ["#0F172A", "#1E293B"],
     },
   ];
 
@@ -435,7 +435,7 @@ function BalanceCard({ balance }) {
       <View style={bc.trackWrap}>
         <View style={bc.track}>
           <View
-            style={[bc.fill, { width: `${pct}%`, backgroundColor: cfg.color }]}
+            style={[bc.fill, { width: `${pct}%`, backgroundColor: C.blue }]}
           />
         </View>
         <Text style={bc.pctText}>{pct}% used</Text>
@@ -580,7 +580,7 @@ function ByTypeRow({ item, total, last }) {
             <View
               style={[
                 btr.fill,
-                { width: `${pct}%`, backgroundColor: cfg.color },
+                { width: `${pct}%`, backgroundColor: C.blue }, // was cfg.color
               ]}
             />
           </View>
