@@ -456,7 +456,12 @@ export default function HRDashboard() {
             </View>
             <View style={styles.barsContainer}>
               {ATTENDANCE_BARS.map((bar, i) => (
-                <AttendanceBar key={i} {...bar} maxTotal={MAX_TOTAL} />
+                <AttendanceBar
+                  key={i}
+                  {...bar}
+                  maxTotal={MAX_TOTAL}
+                  index={i}
+                />
               ))}
             </View>
             <Pressable
@@ -703,43 +708,113 @@ function QuickAction({ label, iconName, color, onPress }) {
   );
 }
 
-function AttendanceBar({ day, present, late, absent, maxTotal }) {
+function AttendanceBar({ day, present, late, absent, maxTotal, index }) {
+  const presentAnim = useRef(new Animated.Value(0)).current;
+  const lateAnim = useRef(new Animated.Value(0)).current;
+  const absentAnim = useRef(new Animated.Value(0)).current;
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+
   const presentH = (present / maxTotal) * 80;
   const lateH = (late / maxTotal) * 80;
   const absentH = (absent / maxTotal) * 80;
 
+  useEffect(() => {
+    const baseDelay = index * 120;
+    Animated.sequence([
+      Animated.delay(baseDelay),
+      Animated.stagger(60, [
+        Animated.spring(absentAnim, {
+          toValue: 1,
+          damping: 12,
+          stiffness: 180,
+          useNativeDriver: true,
+        }),
+        Animated.spring(lateAnim, {
+          toValue: 1,
+          damping: 12,
+          stiffness: 180,
+          useNativeDriver: true,
+        }),
+        Animated.spring(presentAnim, {
+          toValue: 1,
+          damping: 12,
+          stiffness: 180,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, []);
+
+  const animSeg = (anim, height, color, style = {}) => (
+    <Animated.View
+      style={[
+        styles.barSegment,
+        { height, backgroundColor: color },
+        style,
+        {
+          transform: [{ scaleY: anim }],
+          transformOrigin: "bottom", // Expo SDK 50+
+        },
+      ]}
+    />
+  );
+
   return (
-    <View style={styles.barCol}>
+    <Pressable
+      style={styles.barCol}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setTooltipVisible((v) => !v);
+      }}
+    >
+      {/* Tooltip */}
+      {tooltipVisible && (
+        <View style={styles.barTooltip}>
+          <TooltipRow color={ACCENT} label="Present" value={present} />
+          <TooltipRow color={ORANGE} label="Late" value={late} />
+          <TooltipRow color={RED} label="Absent" value={absent} />
+          <View style={styles.tooltipArrow} />
+        </View>
+      )}
+
       <View style={styles.barStack}>
-        <View
-          style={[
-            styles.barSegment,
-            { height: absentH, backgroundColor: RED + "99" },
-          ]}
-        />
-        <View
-          style={[
-            styles.barSegment,
-            { height: lateH, backgroundColor: ORANGE + "99" },
-          ]}
-        />
-        <View
-          style={[
-            styles.barSegment,
-            {
-              height: presentH,
-              backgroundColor: ACCENT,
-              borderTopLeftRadius: 4,
-              borderTopRightRadius: 4,
-            },
-          ]}
-        />
+        {animSeg(absentAnim, absentH, RED + "99")}
+        {animSeg(lateAnim, lateH, ORANGE + "99")}
+        {animSeg(presentAnim, presentH, ACCENT, {
+          borderTopLeftRadius: 4,
+          borderTopRightRadius: 4,
+        })}
       </View>
       <Text style={[styles.barLabel, sansText()]}>{day}</Text>
-    </View>
+    </Pressable>
   );
 }
 
+function TooltipRow({ color, label, value }) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        marginBottom: 2,
+      }}
+    >
+      <View
+        style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: color }}
+      />
+      <Text style={[{ fontSize: 11, color: MUTED }, sansText()]}>{label}</Text>
+      <Text
+        style={[
+          { fontSize: 11, fontWeight: "700", color: NAVY, marginLeft: "auto" },
+          monoText(),
+        ]}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
 function LegendDot({ color, label }) {
   return (
     <View style={styles.legendItem}>
@@ -1249,5 +1324,38 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     backgroundColor: BORDER,
     marginHorizontal: 14,
+  },
+
+  barTooltip: {
+    position: "absolute",
+    bottom: "100%",
+    left: "50%",
+    transform: [{ translateX: -52 }],
+    width: 120,
+    backgroundColor: SURFACE,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: BORDER,
+    padding: 10,
+    zIndex: 10,
+    marginBottom: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  tooltipArrow: {
+    position: "absolute",
+    bottom: -5,
+    left: "50%",
+    marginLeft: -5,
+    width: 10,
+    height: 10,
+    backgroundColor: SURFACE,
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: BORDER,
+    transform: [{ rotate: "45deg" }],
   },
 });
