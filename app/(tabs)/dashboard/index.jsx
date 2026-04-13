@@ -354,7 +354,7 @@ export default function HRDashboard() {
                 <Pressable
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push("/profile");
+                    router.replace("/profile");
                   }}
                   style={({ pressed }) => [pressed && { opacity: 0.8 }]}
                 >
@@ -417,7 +417,7 @@ export default function HRDashboard() {
               label="Announce"
               iconName="megaphone"
               color={PURPLE}
-              onPress={() => router.push("/announcements/new")}
+              onPress={() => router.push("/dashboard/announcements")}
             />
             <QuickAction
               label="Attendance"
@@ -441,7 +441,7 @@ export default function HRDashboard() {
               label="Settings"
               iconName="settings"
               color="#475569"
-              onPress={() => {}}
+              onPress={() => router.push("/profile/settings")}
             />
             <View style={{ width: 8 }} />
           </ScrollView>
@@ -464,7 +464,7 @@ export default function HRDashboard() {
                 styles.viewAllBtn,
                 pressed && { opacity: 0.7 },
               ]}
-              onPress={() => router.push("/attendance")}
+              onPress={() => router.replace("/attendance")}
             >
               <Text style={[styles.viewAllText, sansText()]}>
                 View full records

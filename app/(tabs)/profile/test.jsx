@@ -1377,7 +1377,7 @@ const sh = StyleSheet.create({
     fontSize: 11,
     color: C.muted,
     marginTop: 1,
-    fontWeight: "500",
+    fontWeight: "500",  
   },
 });
 
