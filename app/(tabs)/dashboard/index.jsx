@@ -5,7 +5,6 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Circle, G, Svg } from "react-native-svg";
 import {
   Alert,
   Animated,
@@ -19,6 +18,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Circle, G, Svg } from "react-native-svg";
 import { monoText, sansText, serifText } from "../../../src/theme/fonts";
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────
@@ -49,28 +49,28 @@ const KPI_DATA = [
   {
     label: "Total\nEmployees",
     value: "142",
-    pct: 1.0,          // 100% — full ring as baseline
+    pct: 1.0, // 100% — full ring as baseline
     color: ACCENT,
     trackColor: "rgba(255,255,255,0.12)",
   },
   {
     label: "Present\nToday",
     value: "118",
-    pct: 118 / 142,    // 83%
+    pct: 118 / 142, // 83%
     color: GREEN,
     trackColor: "rgba(255,255,255,0.12)",
   },
   {
     label: "On\nLeave",
     value: "9",
-    pct: 9 / 142,      // 6%
+    pct: 9 / 142, // 6%
     color: ORANGE,
     trackColor: "rgba(255,255,255,0.12)",
   },
   {
     label: "Open\nPositions",
     value: "6",
-    pct: 6 / 20,       // out of 20 max headcount
+    pct: 6 / 20, // out of 20 max headcount
     color: BLUE,
     trackColor: "rgba(255,255,255,0.12)",
   },
@@ -435,7 +435,7 @@ export default function HRDashboard() {
               label="Leaves"
               iconName="document-text"
               color="#0891B2"
-              onPress={() => router.push("/leave")}
+              onPress={() => router.push("/dashboard/leave")}
             />
             <QuickAction
               label="Settings"
@@ -613,8 +613,8 @@ function SectionLabel({ title, subtitle, badge, onAction, actionLabel }) {
 }
 
 // ── Animated Donut Ring KPI ──────────────────────────────────────────────────
-const RING_SIZE = 70;          // outer diameter of the SVG canvas
-const STROKE = 7;              // stroke width
+const RING_SIZE = 70; // outer diameter of the SVG canvas
+const STROKE = 7; // stroke width
 const R = (RING_SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * R;
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -636,14 +636,18 @@ function KpiChip({ label, value, pct, color, trackColor }) {
     animVal.interpolate({
       inputRange: [0, 1],
       outputRange: [CIRCUMFERENCE, 0],
-    })
+    }),
   ).current;
 
   return (
     <View style={styles.kpiChip}>
       {/* Donut ring */}
       <View style={styles.kpiRingWrap}>
-        <Svg width={RING_SIZE} height={RING_SIZE} viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}>
+        <Svg
+          width={RING_SIZE}
+          height={RING_SIZE}
+          viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
+        >
           <G rotation="-90" origin={`${RING_SIZE / 2}, ${RING_SIZE / 2}`}>
             {/* Track */}
             <Circle

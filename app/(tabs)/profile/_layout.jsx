@@ -1,7 +1,6 @@
 import { Stack } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { UserCircleIcon } from "react-native-heroicons/outline";
-import { headerTitleStyle } from "../../../src/theme/fonts";
 
 const C = {
   accent: "#0F766E",
@@ -45,34 +44,19 @@ const h = StyleSheet.create({
     color: C.navy,
     letterSpacing: -0.3,
   },
-  sub: {
-    fontSize: 11,
-    color: C.muted,
-    fontWeight: "500",
-    marginTop: 1,
-  },
+  sub: { fontSize: 11, color: C.muted, fontWeight: "500", marginTop: 1 },
 });
 
 export default function ProfileStack() {
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
-        headerBackTitle: "Back",
-        headerStyle: { backgroundColor: C.white },
-        headerTintColor: C.navy,
-        headerTitleStyle: { ...headerTitleStyle, color: C.navy },
-        headerShadowVisible: false,
+        headerShown: false,
         contentStyle: { backgroundColor: "#F8FAFC", paddingBottom: 100 },
       }}
     >
-      <Stack.Screen
-        name="index"
-        options={{
-          headerTitle: () => <ProfileHeaderTitle name="" role="" />,
-        }}
-      />
-      <Stack.Screen name="settings" options={{ title: "Settings" }} />
+      <Stack.Screen name="index" />
+      <Stack.Screen name="settings" />
     </Stack>
   );
 }

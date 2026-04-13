@@ -26,8 +26,9 @@ import {
   PhoneIcon,
   QuestionMarkCircleIcon,
   ShieldCheckIcon,
-  UserGroupIcon
+  UserGroupIcon,
 } from "react-native-heroicons/outline";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ProfileHeaderTitle } from "./_layout";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -68,35 +69,29 @@ function getAvatarUri(nameHint, uriFromStorage) {
   )}&backgroundColor=0F766E&textColor=ffffff&fontSize=38`;
 }
 
-// Solid square icon — exactly like employee detail screen
-function IconSquare({ icon: Icon, color, size = 34 }) {
+// Icon badge — same as attendance/employees screen
+function IconBadge({ icon: Icon, color }) {
   return (
-    <View
-      style={[
-        p.iconSquare,
-        {
-          backgroundColor: color,
-          width: size,
-          height: size,
-          borderRadius: size * 0.27,
-        },
-      ]}
-    >
-      <Icon size={size * 0.44} color="#FFFFFF" strokeWidth={2} />
+    <View style={[p.iconBadge, { backgroundColor: color }]}>
+      <Icon size={16} color="#FFFFFF" strokeWidth={2} />
     </View>
   );
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 function GroupLabel({ title }) {
-  return <Text style={p.groupLabel}>{title}</Text>;
+  return title ? (
+    <Text style={p.groupLabel}>{title}</Text>
+  ) : (
+    <View style={{ height: 8 }} />
+  );
 }
 
 function InfoRow({ icon: Icon, iconColor, label, value, last }) {
   return (
     <>
       <View style={p.row}>
-        <IconSquare icon={Icon} color={iconColor} size={34} />
+        <IconBadge icon={Icon} color={iconColor} />
         <View style={p.rowTexts}>
           <Text style={p.rowLabel}>{label}</Text>
           <Text style={p.rowValue} numberOfLines={1}>
@@ -128,18 +123,14 @@ function NavRow({
           pressed && { backgroundColor: C.divider },
         ]}
       >
-        <IconSquare
-          icon={Icon}
-          color={isDestructive ? C.red : iconColor}
-          size={34}
-        />
+        <IconBadge icon={Icon} color={isDestructive ? C.red : iconColor} />
         <View style={p.rowTexts}>
           <Text style={[p.rowTitle, isDestructive && { color: C.red }]}>
             {title}
           </Text>
           {subtitle ? <Text style={p.rowSubtitle}>{subtitle}</Text> : null}
         </View>
-        {isDestructive ? null : (
+        {!isDestructive && (
           <View style={p.rowRight}>
             {rightLabel ? (
               <Text style={p.rowRightLabel}>{rightLabel}</Text>
@@ -230,11 +221,26 @@ export default function ProfileHome() {
 
   return (
     <View style={p.root}>
+      {/* ── Header — matches attendance screen exactly ── */}
+      <SafeAreaView edges={["top"]} style={p.header}>
+        <View style={p.titleRow}>
+          <View style={p.titleLeft}>
+            <View style={p.headerIconBadge}>
+              <UserGroupIcon size={18} color={C.accent} strokeWidth={2} />
+            </View>
+            <View>
+              <Text style={p.title}>Profile</Text>
+              <Text style={p.subtitle}>{role}</Text>
+            </View>
+          </View>
+        </View>
+      </SafeAreaView>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={p.scroll}
       >
-        {/* ── Hero — WhatsApp style: large centered avatar + name + role ── */}
+        {/* ── Hero ── */}
         <View style={p.hero}>
           <View style={p.avatarWrap}>
             <Image source={avatarSource} style={p.avatar} resizeMode="cover" />
@@ -247,10 +253,8 @@ export default function ProfileHome() {
           </View>
 
           <Text style={p.heroName}>{username}</Text>
-
           <Text style={p.heroRole}>{role}</Text>
 
-          {/* Employee ID + dept chips — like WhatsApp's bio line */}
           <View style={p.heroBioRow}>
             <View style={p.bioChip}>
               <IdentificationIcon size={11} color={C.sub} strokeWidth={2.5} />
@@ -413,20 +417,48 @@ const p = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
   scroll: { paddingBottom: 20 },
 
-  // Hero — WhatsApp style
+  // ── Header — attendance screen pattern ──
+  header: {
+    backgroundColor: C.white,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    paddingHorizontal: 20,
+    paddingBottom: 14,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 12,
+  },
+  titleLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
+  headerIconBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: C.accentLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: C.navy,
+    letterSpacing: -0.4,
+  },
+  subtitle: { fontSize: 12, color: C.muted, fontWeight: "500", marginTop: 1 },
+
+  // ── Hero ──
   hero: {
     backgroundColor: C.white,
     alignItems: "center",
-    paddingTop: 32,
+    paddingTop: 28,
     paddingBottom: 24,
     borderBottomWidth: 1,
     borderBottomColor: C.border,
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  avatarWrap: {
-    position: "relative",
-    marginBottom: 14,
-  },
+  avatarWrap: { position: "relative", marginBottom: 14 },
   avatar: {
     width: 100,
     height: 100,
@@ -465,22 +497,9 @@ const p = StyleSheet.create({
     gap: 8,
     marginBottom: 18,
   },
-  bioChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  bioChipText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: C.sub,
-  },
-  bioDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: C.muted,
-  },
+  bioChip: { flexDirection: "row", alignItems: "center", gap: 4 },
+  bioChipText: { fontSize: 12, fontWeight: "600", color: C.sub },
+  bioDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: C.muted },
   editBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -492,39 +511,38 @@ const p = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.accentMid,
   },
-  editBtnText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: C.accent,
-  },
+  editBtnText: { fontSize: 13, fontWeight: "700", color: C.accent },
 
-  // Group label — like WhatsApp's "Settings" grey label
+  // ── Group label — attendance screen font size/weight ──
   groupLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
-    color: C.sub,
-    marginHorizontal: 20,
+    color: C.muted,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+    marginHorizontal: 16,
     marginBottom: 8,
     marginTop: 4,
   },
 
-  // Card
+  // ── Card — attendance screen: rounded, full border, horizontal margin ──
   card: {
     backgroundColor: C.white,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
+    borderRadius: 18,
+    borderWidth: 1,
     borderColor: C.border,
-    marginBottom: 24,
+    marginHorizontal: 16,
+    marginBottom: 20,
+    overflow: "hidden",
   },
 
-  // Row divider — starts after icon, like WhatsApp
+  // ── Row divider — attendance screen: full-width ──
   rowDivider: {
     height: 1,
     backgroundColor: C.divider,
-    marginLeft: 62,
   },
 
-  // Shared row layout
+  // ── Row layout ──
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -534,53 +552,36 @@ const p = StyleSheet.create({
   },
   rowTexts: { flex: 1 },
   rowLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "700",
     color: C.muted,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
     marginBottom: 2,
   },
-  rowValue: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: C.navy,
-  },
-  rowTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: C.navy,
-  },
+  rowValue: { fontSize: 14, fontWeight: "600", color: C.navy },
+  rowTitle: { fontSize: 15, fontWeight: "600", color: C.navy },
   rowSubtitle: {
     fontSize: 12,
     fontWeight: "500",
     color: C.muted,
     marginTop: 2,
   },
-  rowRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  rowRightLabel: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: C.muted,
-  },
+  rowRight: { flexDirection: "row", alignItems: "center", gap: 4 },
+  rowRightLabel: { fontSize: 13, fontWeight: "500", color: C.muted },
 
-  // Icon square — solid fill, exactly like employee detail
-  iconSquare: {
+  // ── Icon badge — attendance/employees screen pattern ──
+  iconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
 
-  // App footer
-  appInfo: {
-    alignItems: "center",
-    marginTop: 8,
-    gap: 3,
-  },
+  // ── App footer ──
+  appInfo: { alignItems: "center", marginTop: 8, gap: 3 },
   appVersion: { fontSize: 12, color: C.muted, fontWeight: "500" },
   appCopyright: { fontSize: 11, color: C.border, fontWeight: "500" },
 });

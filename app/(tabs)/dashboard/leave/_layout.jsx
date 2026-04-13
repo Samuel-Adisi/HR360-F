@@ -1,14 +1,13 @@
 import { Stack } from "expo-router";
 
-export default function DashboardStack() {
+export default function LeaveStack() {
   return (
     <Stack
       screenOptions={{
-        headerShown: false,
+        headerShown: true,
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="payroll/index" options={{ title: "Payroll" }} />
     </Stack>
   );
 }

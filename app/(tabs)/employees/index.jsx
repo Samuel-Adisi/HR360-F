@@ -421,6 +421,7 @@ export default function EmployeesScreen() {
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={s.listContent}
+        style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => (
           <View
@@ -459,7 +460,7 @@ export default function EmployeesScreen() {
 const AVATAR = 54;
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bg },
+  root: { flex: 1, backgroundColor: C.bg, backgroundColor: C.white },
 
   // Header
   header: {
@@ -570,7 +571,7 @@ const s = StyleSheet.create({
   activeChipText: { fontSize: 12, fontWeight: "700", color: C.accent },
 
   // List
-  listContent: { backgroundColor: C.white, paddingBottom: 24 },
+  listContent: { paddingBottom: 50 },
 
   // Card
   card: {

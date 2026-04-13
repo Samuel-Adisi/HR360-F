@@ -1,7 +1,7 @@
-import { useNavigation, useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
   Image,
   Pressable,
   RefreshControl,
@@ -13,26 +13,18 @@ import {
 } from "react-native";
 import {
   BuildingOffice2Icon,
-  CalendarDaysIcon,
-  CheckBadgeIcon,
-  ChevronRightIcon,
-  ClockIcon,
-  ExclamationCircleIcon,
   MagnifyingGlassIcon,
   ShieldCheckIcon,
   UserGroupIcon,
   XMarkIcon,
 } from "react-native-heroicons/outline";
-import { CheckCircleIcon } from "react-native-heroicons/solid";
-import { AttendanceHeaderRight, AttendanceHeaderTitle } from "./_layout";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
   accent: "#0F766E",
   accentLight: "#F0FDFA",
   accentMid: "#CCFBF1",
   navy: "#0F172A",
-  slate: "#1E293B",
   sub: "#64748B",
   muted: "#94A3B8",
   border: "#E2E8F0",
@@ -53,42 +45,20 @@ const C = {
   blueText: "#1D4ED8",
 };
 
-// ─── Status config ────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  Present: {
-    label: "Present",
-    bg: C.greenBg,
-    text: C.greenText,
-    dot: C.green,
-    iconColor: C.green,
-  },
-  Absent: {
-    label: "Absent",
-    bg: C.redBg,
-    text: C.redText,
-    dot: C.red,
-    iconColor: C.red,
-  },
-  Late: {
-    label: "Late",
-    bg: C.amberBg,
-    text: C.amberText,
-    dot: C.amber,
-    iconColor: C.amber,
-  },
+  Present: { label: "Present", bg: C.greenBg, text: C.greenText, dot: C.green },
+  Absent: { label: "Absent", bg: C.redBg, text: C.redText, dot: C.red },
+  Late: { label: "Late", bg: C.amberBg, text: C.amberText, dot: C.amber },
   "On Leave": {
     label: "On Leave",
     bg: C.blueBg,
     text: C.blueText,
     dot: C.blue,
-    iconColor: C.blue,
   },
 };
 
 const STATUS_FILTERS = ["All", "Present", "Absent", "Late", "On Leave"];
 
-// ─── Mock data — mirrors EmployeeAttendanceList API response exactly ──────────
-// TODO: replace with GET /api/attendance/employees/?status=<filter>&search=<search>
 const MOCK_RESPONSE = {
   date: "2025-07-10",
   total: 6,
@@ -96,326 +66,239 @@ const MOCK_RESPONSE = {
     {
       id: 1,
       name: "Kwame Asante",
-      email: "kwame.asante@company.com",
       department: "Engineering",
       status: "Present",
       check_in: "08:47:00",
       check_out: null,
-      hours_worked: 0.0,
+      hours_worked: 0,
       face_verified: true,
-      is_checked_in: true,
-      is_checked_out: false,
-      // avatar: require("../../../assets/avatars/kwame.jpg"), // uncomment when you have real images
     },
     {
       id: 2,
       name: "Abena Mensah",
-      email: "abena.mensah@company.com",
       department: "Finance",
       status: "Late",
       check_in: "09:14:00",
       check_out: "17:02:00",
       hours_worked: 7.8,
       face_verified: true,
-      is_checked_in: false,
-      is_checked_out: true,
     },
     {
       id: 3,
       name: "Kofi Boateng",
-      email: "kofi.boateng@company.com",
       department: "HR",
       status: "Absent",
       check_in: null,
       check_out: null,
-      hours_worked: 0.0,
+      hours_worked: 0,
       face_verified: false,
-      is_checked_in: false,
-      is_checked_out: false,
     },
     {
       id: 4,
       name: "Ama Owusu",
-      email: "ama.owusu@company.com",
       department: "Engineering",
       status: "Present",
       check_in: "08:31:00",
       check_out: "17:00:00",
       hours_worked: 8.5,
       face_verified: true,
-      is_checked_in: false,
-      is_checked_out: true,
     },
     {
       id: 5,
       name: "Yaw Darko",
-      email: "yaw.darko@company.com",
       department: "Sales",
       status: "On Leave",
       check_in: null,
       check_out: null,
-      hours_worked: 0.0,
+      hours_worked: 0,
       face_verified: false,
-      is_checked_in: false,
-      is_checked_out: false,
     },
     {
       id: 6,
       name: "Efua Amponsah",
-      email: "efua.amponsah@company.com",
       department: "Design",
       status: "Present",
       check_in: "08:55:00",
       check_out: null,
-      hours_worked: 0.0,
+      hours_worked: 0,
       face_verified: false,
-      is_checked_in: true,
-      is_checked_out: false,
     },
   ],
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function formatTime(timeStr) {
-  if (!timeStr) return "--:--";
-  const [h, m] = timeStr.split(":");
+function formatTime(t) {
+  if (!t) return "—";
+  const [h, m] = t.split(":");
   const hour = parseInt(h);
-  const ampm = hour >= 12 ? "PM" : "AM";
-  const display = hour % 12 || 12;
-  return `${display}:${m} ${ampm}`;
+  return `${hour % 12 || 12}:${m} ${hour >= 12 ? "PM" : "AM"}`;
 }
 
 function formatDate(dateStr) {
   if (!dateStr) return "Today";
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", {
+  return new Date(dateStr).toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
   });
 }
 
-function getInitials(name) {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+function getAvatarUri(name) {
+  return `https://api.dicebear.com/7.x/initials/png?seed=${encodeURIComponent(name)}&backgroundColor=0F766E&textColor=ffffff&fontSize=38`;
 }
 
-// Placeholder avatar URL — swap for real image URIs from your API/CDN
-function getAvatarUri(employee) {
-  if (employee.avatar) return employee.avatar;
-  // DiceBear — generates a consistent illustrated avatar per seed
-  return `https://api.dicebear.com/7.x/initials/png?seed=${encodeURIComponent(employee.name)}&backgroundColor=0F766E&textColor=ffffff&fontSize=38`;
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-function StatusBadge({ status }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG["Absent"];
-  return (
-    <View style={[s.badge, { backgroundColor: cfg.bg }]}>
-      <View style={[s.badgeDot, { backgroundColor: cfg.dot }]} />
-      <Text style={[s.badgeText, { color: cfg.text }]}>{cfg.label}</Text>
-    </View>
-  );
-}
-
-// ─── Stats Banner ─────────────────────────────────────────────────────────────
 function StatsBanner({ counts, total }) {
   const presentRate =
-    total > 0 ? Math.round((counts["Present"] / total) * 100) : 0;
+    total > 0 ? Math.round((counts.Present / total) * 100) : 0;
 
   const tiles = [
     {
       label: "Present",
-      value: counts["Present"],
-      icon: CheckBadgeIcon,
-      color: C.greenText,
-      bg: C.greenBg,
-      borderColor: "#BBF7D0",
+      value: counts.Present,
+      gradientColors: ["#059669", "#047857"],
     },
     {
       label: "Absent",
-      value: counts["Absent"],
-      icon: ExclamationCircleIcon,
-      color: C.redText,
-      bg: C.redBg,
-      borderColor: "#FECACA",
+      value: counts.Absent,
+      gradientColors: ["#DC2626", "#B91C1C"],
     },
     {
       label: "Late",
-      value: counts["Late"],
-      icon: ClockIcon,
-      color: C.amberText,
-      bg: C.amberBg,
-      borderColor: "#FDE68A",
+      value: counts.Late,
+      gradientColors: ["#D97706", "#B45309"],
     },
     {
       label: "On Leave",
       value: counts["On Leave"],
-      icon: CalendarDaysIcon,
-      color: C.blueText,
-      bg: C.blueBg,
-      borderColor: "#BFDBFE",
+      gradientColors: ["#0A66C2", "#0953A8"],
     },
   ];
 
   return (
-    <View style={sb.container}>
-      {/* Attendance rate bar */}
-      <View style={sb.rateRow}>
-        <View style={sb.rateLabelRow}>
-          <UserGroupIcon size={13} color={C.accent} strokeWidth={2.5} />
-          <Text style={sb.rateLabel}>Today's Attendance Rate</Text>
+    <LinearGradient
+      colors={["#0F172A", "#1E293B", "#243044"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={sb.container}
+    >
+      <View style={sb.topRow}>
+        <View style={sb.topLeft}>
+          <Text style={sb.title}>Attendance Rate</Text>
+          <Text style={sb.date}>{formatDate(MOCK_RESPONSE.date)}</Text>
+          <View style={sb.track}>
+            <View style={[sb.fill, { width: `${presentRate}%` }]} />
+          </View>
+          <Text style={sb.rateSmall}>{total} employees tracked</Text>
         </View>
-        <Text style={sb.rateValue}>{presentRate}%</Text>
+        <View style={sb.circle}>
+          <Text style={sb.circleNum}>{presentRate}%</Text>
+          <Text style={sb.circleLabel}>present</Text>
+        </View>
       </View>
 
-      <View style={sb.track}>
-        <View style={[sb.fill, { width: `${presentRate}%` }]} />
+      <View style={sb.tiles}>
+        {tiles.map((t) => (
+          <LinearGradient
+            key={t.label}
+            colors={t.gradientColors}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={sb.tile}
+          >
+            <Text style={sb.tileNum}>{t.value}</Text>
+            <Text style={sb.tileLabel}>{t.label}</Text>
+          </LinearGradient>
+        ))}
       </View>
+    </LinearGradient>
+  );
+}
 
-      {/* Stat tiles */}
-      <View style={sb.tilesRow}>
-        {tiles.map((tile) => {
-          const Icon = tile.icon;
-          return (
-            <View
-              key={tile.label}
-              style={[
-                sb.tile,
-                { backgroundColor: tile.bg, borderColor: tile.borderColor },
-              ]}
-            >
-              <Icon size={15} color={tile.color} strokeWidth={2.5} />
-              <Text style={[sb.tileValue, { color: tile.color }]}>
-                {tile.value}
-              </Text>
-              <Text style={[sb.tileLabel, { color: tile.color }]}>
-                {tile.label}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
+// ─── Status Badge ─────────────────────────────────────────────────────────────
+function StatusBadge({ status }) {
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.Absent;
+  return (
+    <View style={[c.badge, { backgroundColor: cfg.bg }]}>
+      <View style={[c.badgeDot, { backgroundColor: cfg.dot }]} />
+      <Text style={[c.badgeText, { color: cfg.text }]}>{cfg.label}</Text>
     </View>
   );
 }
 
 // ─── Employee Card ────────────────────────────────────────────────────────────
 function EmployeeCard({ employee, onPress }) {
-  const cfg = STATUS_CONFIG[employee.status] || STATUS_CONFIG["Absent"];
-
+  const cfg = STATUS_CONFIG[employee.status] || STATUS_CONFIG.Absent;
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [s.card, pressed && { opacity: 0.92 }]}
+      style={({ pressed }) => [c.root, pressed && { opacity: 0.85 }]}
     >
-      <View style={s.cardContent}>
-        {/* Top row */}
-        <View style={s.cardTopRow}>
-          {/* Profile image */}
-          <View style={s.avatarWrap}>
-            <Image
-              source={{ uri: getAvatarUri(employee) }}
-              style={s.avatar}
-              resizeMode="cover"
-            />
-            {/* Online/status dot */}
-            <View style={[s.statusDotOverlay, { backgroundColor: cfg.dot }]} />
+      <View style={c.top}>
+        <View style={c.avatarWrap}>
+          <Image
+            source={{ uri: getAvatarUri(employee.name) }}
+            style={c.avatar}
+            resizeMode="cover"
+          />
+          <View style={[c.dot, { backgroundColor: cfg.dot }]} />
+        </View>
+        <View style={c.info}>
+          <Text style={c.name} numberOfLines={1}>
+            {employee.name}
+          </Text>
+          <View style={c.deptRow}>
+            <BuildingOffice2Icon size={11} color={C.muted} strokeWidth={2} />
+            <Text style={c.dept}>{employee.department}</Text>
           </View>
+        </View>
+        <View style={c.right}>
+          <StatusBadge status={employee.status} />
+          <Text style={c.chevron}>›</Text>
+        </View>
+      </View>
 
-          <View style={s.cardMeta}>
-            <Text style={s.cardName} numberOfLines={1}>
-              {employee.name}
-            </Text>
-            <View style={s.cardDeptRow}>
-              <BuildingOffice2Icon size={11} color={C.muted} strokeWidth={2} />
-              <Text style={s.cardDept} numberOfLines={1}>
-                {employee.department}
+      <View style={c.divider} />
+
+      <View style={c.statsRow}>
+        {[
+          {
+            label: "CHECK IN",
+            value: formatTime(employee.check_in),
+            dim: !employee.check_in,
+          },
+          {
+            label: "CHECK OUT",
+            value: formatTime(employee.check_out),
+            dim: !employee.check_out,
+          },
+          {
+            label: "HOURS",
+            value:
+              employee.hours_worked > 0 ? `${employee.hours_worked}h` : "—",
+            dim: !employee.hours_worked,
+          },
+        ].map((stat, i) => (
+          <View key={stat.label} style={c.statGroup}>
+            {i > 0 && <View style={c.sep} />}
+            <View style={c.stat}>
+              <Text style={c.statLabel}>{stat.label}</Text>
+              <Text style={[c.statVal, stat.dim && { color: C.muted }]}>
+                {stat.value}
               </Text>
             </View>
           </View>
-
-          <View style={s.cardRight}>
-            <StatusBadge status={employee.status} />
-            <ChevronRightIcon
-              size={14}
-              color={C.muted}
-              strokeWidth={2.5}
-              style={{ marginTop: 6 }}
-            />
-          </View>
-        </View>
-
-        {/* Divider */}
-        <View style={s.cardDivider} />
-
-        {/* Bottom stats row */}
-        <View style={s.cardBottomRow}>
-          <View style={s.cardStat}>
-            <Text style={s.cardStatLabel}>CHECK IN</Text>
-            <Text
-              style={[
-                s.cardStatValue,
-                !employee.check_in && { color: C.muted },
-              ]}
-            >
-              {formatTime(employee.check_in)}
-            </Text>
-          </View>
-
-          <View style={s.cardStatDivider} />
-
-          <View style={s.cardStat}>
-            <Text style={s.cardStatLabel}>CHECK OUT</Text>
-            <Text
-              style={[
-                s.cardStatValue,
-                !employee.check_out && { color: C.muted },
-              ]}
-            >
-              {formatTime(employee.check_out)}
-            </Text>
-          </View>
-
-          <View style={s.cardStatDivider} />
-
-          <View style={s.cardStat}>
-            <Text style={s.cardStatLabel}>HOURS</Text>
-            <Text style={s.cardStatValue}>
-              {employee.hours_worked > 0 ? `${employee.hours_worked}h` : "--"}
-            </Text>
-          </View>
-
-          <View style={s.cardStatDivider} />
-
-          <View style={s.cardStat}>
-            <Text style={s.cardStatLabel}>FACE</Text>
-            <View style={s.faceRow}>
-              {employee.face_verified ? (
-                <>
-                  <ShieldCheckIcon
-                    size={11}
-                    color={C.green}
-                    strokeWidth={2.5}
-                  />
-                  <Text
-                    style={[s.cardStatValue, { color: C.green, fontSize: 11 }]}
-                  >
-                    OK
-                  </Text>
-                </>
-              ) : (
-                <Text
-                  style={[s.cardStatValue, { color: C.muted, fontSize: 11 }]}
-                >
-                  Manual
-                </Text>
-              )}
-            </View>
+        ))}
+        <View style={c.statGroup}>
+          <View style={c.sep} />
+          <View style={c.stat}>
+            <Text style={c.statLabel}>FACE</Text>
+            {employee.face_verified ? (
+              <View style={c.faceRow}>
+                <ShieldCheckIcon size={11} color={C.green} strokeWidth={2.5} />
+                <Text style={[c.statVal, { color: C.green }]}>OK</Text>
+              </View>
+            ) : (
+              <Text style={[c.statVal, { color: C.muted }]}>Manual</Text>
+            )}
           </View>
         </View>
       </View>
@@ -423,67 +306,28 @@ function EmployeeCard({ employee, onPress }) {
   );
 }
 
-function EmptyState({ search, filter }) {
-  return (
-    <View style={s.emptyState}>
-      <View style={s.emptyIconWrap}>
-        <UserGroupIcon size={34} color={C.muted} strokeWidth={1.5} />
-      </View>
-      <Text style={s.emptyTitle}>No employees found</Text>
-      <Text style={s.emptySubtitle}>
-        {search
-          ? `No results for "${search}"`
-          : filter !== "All"
-            ? `No employees with status "${filter}" today`
-            : "No attendance records for today"}
-      </Text>
-    </View>
-  );
-}
-
-// ─── Main Screen ──────────────────────────────────────────────────────────────
+// ─── Screen ───────────────────────────────────────────────────────────────────
 export default function EmployeeAttendanceListScreen() {
   const router = useRouter();
-  const navigation = useNavigation();
-
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  // ── Data ───────────────────────────────────────────────────────────────────
-  // TODO: Replace with API call:
-  // GET /api/attendance/employees/?status=<filter>&search=<search>
   const data = MOCK_RESPONSE;
-
-  // ── Sync header with real data once API is wired ───────────────────────────
-  useEffect(() => {
-    navigation.setOptions({
-      headerTitle: () => (
-        <AttendanceHeaderTitle
-          date={formatDate(data.date)}
-          total={data.total}
-        />
-      ),
-      headerRight: () => <AttendanceHeaderRight total={data.total} />,
-    });
-  }, [data.date, data.total]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    // TODO: re-fetch GET /api/attendance/employees/
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
-  // Client-side filter — remove once API params are wired
   const filtered = data.employees.filter((emp) => {
-    const matchesSearch =
-      search.trim() === "" ||
-      emp.name.toLowerCase().includes(search.toLowerCase()) ||
-      emp.email.toLowerCase().includes(search.toLowerCase()) ||
-      emp.department.toLowerCase().includes(search.toLowerCase());
-    const matchesFilter = activeFilter === "All" || emp.status === activeFilter;
-    return matchesSearch && matchesFilter;
+    const q = search.toLowerCase();
+    const matchSearch =
+      !q ||
+      emp.name.toLowerCase().includes(q) ||
+      emp.department.toLowerCase().includes(q);
+    const matchFilter = activeFilter === "All" || emp.status === activeFilter;
+    return matchSearch && matchFilter;
   });
 
   const counts = data.employees.reduce(
@@ -496,6 +340,45 @@ export default function EmployeeAttendanceListScreen() {
 
   return (
     <View style={s.root}>
+      {/* ── Custom header matching employees screen style ── */}
+      <SafeAreaView edges={["top"]} style={s.header}>
+        <View style={s.titleRow}>
+          <View style={s.titleLeft}>
+            {/* Same iconBadge pattern as employees screen */}
+            <View style={s.iconBadge}>
+              <UserGroupIcon size={18} color={C.accent} strokeWidth={2} />
+            </View>
+            <View>
+              <Text style={s.title}>Attendance</Text>
+              <Text style={s.subtitle}>
+                {formatDate(data.date)} · {data.total} employees
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Search — same style as employees screen */}
+        <View style={s.controlRow}>
+          <View style={s.searchWrap}>
+            <MagnifyingGlassIcon size={17} color={C.muted} strokeWidth={2.2} />
+            <TextInput
+              style={s.searchInput}
+              placeholder="Search name or department…"
+              placeholderTextColor={C.muted}
+              value={search}
+              onChangeText={setSearch}
+              returnKeyType="search"
+              autoCapitalize="none"
+            />
+            {search.length > 0 && (
+              <Pressable onPress={() => setSearch("")} hitSlop={8}>
+                <XMarkIcon size={15} color={C.muted} strokeWidth={2.5} />
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </SafeAreaView>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.scroll}
@@ -509,33 +392,12 @@ export default function EmployeeAttendanceListScreen() {
           />
         }
       >
-        {/* ── Stats Banner ── */}
+        {/* Stats */}
         <View style={s.section}>
           <StatsBanner counts={counts} total={data.total} />
         </View>
 
-        {/* ── Search ── */}
-        <View style={s.searchWrap}>
-          <View style={s.searchInner}>
-            <MagnifyingGlassIcon size={16} color={C.muted} strokeWidth={2.5} />
-            <TextInput
-              style={s.searchInput}
-              placeholder="Search by name, email or department…"
-              placeholderTextColor={C.muted}
-              value={search}
-              onChangeText={setSearch}
-              returnKeyType="search"
-              autoCapitalize="none"
-            />
-            {search.length > 0 && (
-              <Pressable onPress={() => setSearch("")} hitSlop={8}>
-                <XMarkIcon size={14} color={C.muted} strokeWidth={2.5} />
-              </Pressable>
-            )}
-          </View>
-        </View>
-
-        {/* ── Filter pills ── */}
+        {/* Filter pills */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -549,22 +411,15 @@ export default function EmployeeAttendanceListScreen() {
                 key={f}
                 onPress={() => setActiveFilter(f)}
                 style={({ pressed }) => [
-                  s.filterPill,
+                  s.pill,
                   active && {
                     backgroundColor: cfg ? cfg.dot : C.accent,
                     borderColor: cfg ? cfg.dot : C.accent,
                   },
-                  pressed && { opacity: 0.8 },
+                  pressed && { opacity: 0.75 },
                 ]}
               >
-                {active && (
-                  <CheckCircleIcon
-                    size={12}
-                    color="#fff"
-                    style={{ marginRight: 4 }}
-                  />
-                )}
-                <Text style={[s.filterPillText, active && { color: "#fff" }]}>
+                <Text style={[s.pillText, active && { color: C.white }]}>
                   {f}
                 </Text>
               </Pressable>
@@ -572,7 +427,7 @@ export default function EmployeeAttendanceListScreen() {
           })}
         </ScrollView>
 
-        {/* ── Result label ── */}
+        {/* Result count */}
         <View style={s.resultRow}>
           <Text style={s.resultText}>
             {filtered.length} employee{filtered.length !== 1 ? "s" : ""}
@@ -581,214 +436,132 @@ export default function EmployeeAttendanceListScreen() {
           </Text>
         </View>
 
-        {/* ── List ── */}
-        {loading ? (
-          <ActivityIndicator
-            size="large"
-            color={C.accent}
-            style={{ marginTop: 40 }}
-          />
-        ) : filtered.length === 0 ? (
-          <EmptyState search={search} filter={activeFilter} />
+        {/* List */}
+        {filtered.length === 0 ? (
+          <View style={s.empty}>
+            <View style={s.emptyIcon}>
+              <UserGroupIcon size={30} color={C.muted} strokeWidth={1.5} />
+            </View>
+            <Text style={s.emptyTitle}>No employees found</Text>
+            <Text style={s.emptySub}>Try a different search or filter</Text>
+          </View>
         ) : (
           <View style={s.listWrap}>
-            {filtered.map((emp, index) => (
+            {filtered.map((emp, i) => (
               <View key={emp.id}>
                 <EmployeeCard
                   employee={emp}
-                  onPress={() => {
-                    // TODO: navigate to EmployeeAttendanceDetail
-                    router.push(`/attendance/employees/${emp.id}`);
-                  }}
+                  onPress={() => router.push(`/attendance/employees/${emp.id}`)}
                 />
-                {index < filtered.length - 1 && (
-                  <View style={s.cardSeparator} />
-                )}
+                {i < filtered.length - 1 && <View style={s.cardSep} />}
               </View>
             ))}
           </View>
         )}
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 120 }} />
       </ScrollView>
     </View>
   );
 }
 
-// ─── Stats Banner Styles ──────────────────────────────────────────────────────
 const sb = StyleSheet.create({
   container: {
-    backgroundColor: C.white,
     borderRadius: 18,
-    borderWidth: 1,
-    borderColor: C.border,
-    padding: 16,
-    gap: 12,
+    padding: 18,
+    gap: 16,
   },
-  rateRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  rateLabelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  rateLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: C.sub,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  rateValue: {
-    fontSize: 18,
+  topRow: { flexDirection: "row", alignItems: "center", gap: 16 },
+  topLeft: { flex: 1, gap: 6 },
+  title: {
+    fontSize: 15,
     fontWeight: "800",
-    color: C.accent,
-    letterSpacing: -0.5,
+    color: "#FFFFFF",
+    letterSpacing: -0.3,
   },
+  date: { fontSize: 11, color: "rgba(255,255,255,0.5)", fontWeight: "500" },
   track: {
-    height: 6,
-    backgroundColor: C.divider,
+    height: 5,
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderRadius: 3,
     overflow: "hidden",
   },
-  fill: {
-    height: "100%",
-    backgroundColor: C.accent,
-    borderRadius: 3,
+  fill: { height: "100%", backgroundColor: "#0F766E", borderRadius: 3 },
+  rateSmall: {
+    fontSize: 10,
+    color: "rgba(255,255,255,0.45)",
+    fontWeight: "500",
   },
-  tilesRow: {
-    flexDirection: "row",
-    gap: 8,
+  circle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
   },
+  circleNum: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    letterSpacing: -0.5,
+  },
+  circleLabel: {
+    fontSize: 9,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.6)",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  tiles: { flexDirection: "row", gap: 8 },
   tile: {
     flex: 1,
     borderRadius: 12,
-    borderWidth: 1,
-    paddingVertical: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 6,
     alignItems: "center",
-    gap: 3,
+    gap: 5,
   },
-  tileValue: {
-    fontSize: 20,
+  tileNum: {
+    fontSize: 22,
     fontWeight: "800",
+    color: "#FFFFFF",
     letterSpacing: -0.5,
   },
   tileLabel: {
     fontSize: 9,
     fontWeight: "700",
+    color: "rgba(255,255,255,0.8)",
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
 });
-
-// ─── Screen Styles ────────────────────────────────────────────────────────────
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bg },
-  scroll: { paddingBottom: 20 },
-  section: { paddingHorizontal: 16, paddingTop: 16 },
-
-  // Search
-  searchWrap: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4 },
-  searchInner: {
+// ─── Card Styles ──────────────────────────────────────────────────────────────
+const c = StyleSheet.create({
+  root: { backgroundColor: C.white },
+  top: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    backgroundColor: C.white,
-    borderWidth: 1.5,
-    borderColor: C.border,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: C.navy,
-    fontWeight: "500",
-    paddingVertical: 0,
-  },
-
-  // Filter pills
-  filterRow: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 4,
-    gap: 8,
-  },
-  filterPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: C.border,
-    backgroundColor: C.white,
-  },
-  filterPillText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: C.sub,
-  },
-
-  // Result count
-  resultRow: {
-    paddingHorizontal: 18,
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  resultText: {
-    fontSize: 12,
-    color: C.muted,
-    fontWeight: "600",
-  },
-
-  // Card list container
-  listWrap: {
-    marginHorizontal: 16,
-    backgroundColor: C.white,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: C.border,
-    overflow: "hidden",
-  },
-  cardSeparator: {
-    height: 1,
-    backgroundColor: C.divider,
-    marginLeft: 78,
-  },
-
-  // Employee card
-  card: { backgroundColor: C.white },
-  cardContent: {
-    paddingHorizontal: 14,
     paddingTop: 14,
-    paddingBottom: 12,
-  },
-  cardTopRow: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: 12,
   },
-
-  // Avatar — real image, no gradient background
   avatarWrap: {
     width: 46,
     height: 46,
     borderRadius: 23,
-    flexShrink: 0,
     position: "relative",
+    flexShrink: 0,
   },
   avatar: {
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: C.divider, // shows while image loads
+    backgroundColor: C.divider,
   },
-  statusDotOverlay: {
+  dot: {
     position: "absolute",
     bottom: 1,
     right: 1,
@@ -798,30 +571,11 @@ const s = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.white,
   },
-
-  cardMeta: { flex: 1, gap: 3 },
-  cardName: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: C.navy,
-    letterSpacing: -0.2,
-  },
-  cardDeptRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  cardDept: {
-    fontSize: 12,
-    color: C.muted,
-    fontWeight: "500",
-  },
-  cardRight: {
-    alignItems: "flex-end",
-    gap: 4,
-  },
-
-  // Badge
+  info: { flex: 1, gap: 3 },
+  name: { fontSize: 15, fontWeight: "700", color: C.navy, letterSpacing: -0.2 },
+  deptRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  dept: { fontSize: 12, color: C.muted, fontWeight: "500" },
+  right: { alignItems: "flex-end", gap: 6 },
   badge: {
     flexDirection: "row",
     alignItems: "center",
@@ -831,45 +585,118 @@ const s = StyleSheet.create({
     borderRadius: 20,
   },
   badgeDot: { width: 6, height: 6, borderRadius: 3 },
-  badgeText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.1 },
-
-  // Card bottom stats
-  cardDivider: {
+  badgeText: { fontSize: 11, fontWeight: "700" },
+  chevron: { fontSize: 20, color: "#CBD5E1", lineHeight: 22 },
+  divider: {
     height: 1,
     backgroundColor: C.divider,
-    marginVertical: 10,
+    marginTop: 12,
+    marginHorizontal: 16,
   },
-  cardBottomRow: {
+  statsRow: {
     flexDirection: "row",
-    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  cardStat: { flex: 1, alignItems: "center", gap: 3 },
-  cardStatDivider: { width: 1, height: 28, backgroundColor: C.divider },
-  cardStatLabel: {
+  statGroup: { flex: 1, flexDirection: "row", alignItems: "center" },
+  sep: { width: 1, height: 26, backgroundColor: C.divider, marginRight: 0 },
+  stat: { flex: 1, alignItems: "center", gap: 3 },
+  statLabel: {
     fontSize: 9,
     fontWeight: "700",
     color: C.muted,
     textTransform: "uppercase",
     letterSpacing: 0.6,
   },
-  cardStatValue: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: C.navy,
-  },
+  statVal: { fontSize: 12, fontWeight: "700", color: C.navy },
   faceRow: { flexDirection: "row", alignItems: "center", gap: 3 },
+});
 
-  // Empty state
-  emptyState: {
-    alignItems: "center",
-    paddingTop: 52,
-    paddingBottom: 32,
-    paddingHorizontal: 32,
+// ─── Screen Styles ────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: C.bg },
+  scroll: { paddingBottom: 20 },
+
+  // Header — matches employees screen pattern exactly
+  header: {
+    backgroundColor: C.white,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    paddingHorizontal: 20,
+    paddingBottom: 14,
   },
-  emptyIconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 12,
+    marginBottom: 14,
+  },
+  titleLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
+  iconBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: C.accentLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: C.navy,
+    letterSpacing: -0.4,
+  },
+  subtitle: { fontSize: 12, color: C.muted, fontWeight: "500", marginTop: 1 },
+
+  // Search — matches employees screen
+  controlRow: { flexDirection: "row", gap: 10, alignItems: "center" },
+  searchWrap: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F1F5F9",
+    borderRadius: 11,
+    paddingHorizontal: 12,
+    height: 44,
+    gap: 9,
+  },
+  searchInput: { flex: 1, fontSize: 14, color: C.navy, fontWeight: "500" },
+
+  section: { paddingHorizontal: 16, paddingTop: 16 },
+  filterRow: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 4,
+    gap: 8,
+  },
+  pill: {
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: C.border,
+    backgroundColor: C.white,
+  },
+  pillText: { fontSize: 13, fontWeight: "600", color: C.sub },
+  resultRow: { paddingHorizontal: 18, paddingTop: 10, paddingBottom: 6 },
+  resultText: { fontSize: 12, color: C.muted, fontWeight: "600" },
+
+  listWrap: {
+    marginHorizontal: 16,
+    backgroundColor: C.white,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: C.border,
+    overflow: "hidden",
+  },
+  cardSep: { height: 1, backgroundColor: C.divider, marginLeft: 74 },
+
+  empty: { alignItems: "center", paddingTop: 52, paddingHorizontal: 32 },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: C.divider,
     alignItems: "center",
     justifyContent: "center",
@@ -881,11 +708,10 @@ const s = StyleSheet.create({
     color: C.navy,
     marginBottom: 6,
   },
-  emptySubtitle: {
+  emptySub: {
     fontSize: 13,
     color: C.muted,
     fontWeight: "500",
     textAlign: "center",
-    lineHeight: 20,
   },
 });

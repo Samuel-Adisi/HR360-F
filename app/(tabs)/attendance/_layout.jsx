@@ -1,7 +1,6 @@
 import { Stack } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { ClipboardDocumentListIcon } from "react-native-heroicons/outline";
-import { headerTitleStyle } from "../../../src/theme/fonts";
 
 const C = {
   accent: "#0F766E",
@@ -93,37 +92,18 @@ const h = StyleSheet.create({
   },
 });
 
-// Pass date + total via route params or a shared store when you wire the API.
-// For now the layout exports header component helpers so the screen can
-// call navigation.setOptions({ headerRight }) once it has real data.
 export { AttendanceHeaderRight, AttendanceHeaderTitle };
 
 export default function AttendanceStack() {
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
-        headerBackTitle: "Back",
-        headerStyle: { backgroundColor: C.white },
-        headerTintColor: C.navy,
-        headerTitleStyle: { ...headerTitleStyle, color: C.navy },
-        headerShadowVisible: false,
+        headerShown: false,
         contentStyle: { backgroundColor: "#F8FAFC", paddingBottom: 5 },
       }}
     >
-      <Stack.Screen
-        name="index"
-        options={{
-          // Title + icon injected by the screen via navigation.setOptions
-          headerTitle: () => <AttendanceHeaderTitle date="Today" total={0} />,
-          headerRight: () => <AttendanceHeaderRight total={0} />,
-        }}
-      />
-
-      <Stack.Screen
-        name="employees/[id]"
-        options={{ title: "Employee Attendance" }}
-      />
+      <Stack.Screen name="index" />
+      <Stack.Screen name="employees/[id]" />
     </Stack>
   );
 }
