@@ -17,6 +17,11 @@ export default function DashboardStack() {
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="payroll/index" options={{ title: "Payroll" }} />
+      <Stack.Screen name="payroll/run" options={{ title: "Run payroll" }} />
+      <Stack.Screen name="recruitment/index" options={{ title: "Recruitment" }} />
+      <Stack.Screen name="recruitment/new" options={{ title: "Post job" }} />
+      <Stack.Screen name="announcements/new" options={{ title: "Announcement" }} />
+      <Stack.Screen name="leave/index" options={{ title: "Leave" }} />
     </Stack>
   );
 }

@@ -405,19 +405,19 @@ export default function HRDashboard() {
               label="Post Job"
               iconName="briefcase"
               color={BLUE}
-              onPress={() => router.push("/recruitment/new")}
+              onPress={() => router.push("/dashboard/recruitment/new")}
             />
             <QuickAction
               label="Run Payroll"
               iconName="cash"
               color={ORANGE}
-              onPress={() => router.push("/payroll/run")}
+              onPress={() => router.push("/dashboard/payroll/run")}
             />
             <QuickAction
               label="Announce"
               iconName="megaphone"
               color={PURPLE}
-              onPress={() => router.push("/announcements/new")}
+              onPress={() => router.push("/dashboard/announcements/new")}
             />
             <QuickAction
               label="Attendance"
@@ -435,7 +435,7 @@ export default function HRDashboard() {
               label="Leaves"
               iconName="document-text"
               color="#0891B2"
-              onPress={() => router.push("/leave")}
+              onPress={() => router.push("/dashboard/leave")}
             />
             <QuickAction
               label="Settings"
@@ -477,7 +477,7 @@ export default function HRDashboard() {
           <SectionLabel
             title="Pending Leave Requests"
             badge={PENDING_LEAVES.length}
-            onAction={() => router.push("/leave")}
+            onAction={() => router.push("/dashboard/leave")}
             actionLabel="See all"
           />
           <View style={styles.card}>
@@ -506,7 +506,7 @@ export default function HRDashboard() {
                 styles.infoBlock,
                 pressed && { opacity: 0.9 },
               ]}
-              onPress={() => router.push("/payroll")}
+              onPress={() => router.push("/dashboard/payroll")}
             >
               <LinearGradient
                 colors={[ORANGE, "#EA6B00"]}
@@ -535,7 +535,7 @@ export default function HRDashboard() {
                 styles.infoBlock,
                 pressed && { opacity: 0.9 },
               ]}
-              onPress={() => router.push("/recruitment")}
+              onPress={() => router.push("/dashboard/recruitment")}
             >
               <LinearGradient
                 colors={[BLUE, "#0953A8"]}

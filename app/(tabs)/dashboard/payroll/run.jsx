@@ -1,0 +1,26 @@
+import { StyleSheet, Text, View } from "react-native";
+
+import { sansText, serifText } from "../../../../src/theme/fonts";
+import { SCREEN_BG } from "../../../../src/theme/navigationTheme";
+
+export default function PayrollRun() {
+  return (
+    <View style={styles.container}>
+      <Text style={[styles.title, serifText()]}>Run payroll</Text>
+      <Text style={[styles.body, sansText()]}>
+        Wire your payroll run flow here (period selection, preview, submit).
+      </Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 24,
+    justifyContent: "center",
+    backgroundColor: SCREEN_BG,
+  },
+  title: { fontSize: 22, fontWeight: "700", marginBottom: 8 },
+  body: { fontSize: 15, color: "#555", lineHeight: 22 },
+});
