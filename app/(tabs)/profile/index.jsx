@@ -26,7 +26,9 @@ import {
   PhoneIcon,
   QuestionMarkCircleIcon,
   ShieldCheckIcon,
-  UserGroupIcon
+  UserGroupIcon,
+  CurrencyDollarIcon,
+  GlobeAltIcon
 } from "react-native-heroicons/outline";
 import { ProfileHeaderTitle } from "./_layout";
 
@@ -69,20 +71,20 @@ function getAvatarUri(nameHint, uriFromStorage) {
 }
 
 // Solid square icon — exactly like employee detail screen
-function IconSquare({ icon: Icon, color, size = 34 }) {
+function IconSquare({ icon: Icon, color, size = 30 }) {
   return (
     <View
       style={[
         p.iconSquare,
         {
-          backgroundColor: color,
+          backgroundColor: color + "12",
           width: size,
           height: size,
-          borderRadius: size * 0.27,
+          borderRadius: size * 0.32,
         },
       ]}
     >
-      <Icon size={size * 0.44} color="#FFFFFF" strokeWidth={2} />
+      <Icon size={size * 0.52} color={color} strokeWidth={2} />
     </View>
   );
 }
@@ -277,33 +279,35 @@ export default function ProfileHome() {
         <Card>
           <InfoRow
             icon={EnvelopeIcon}
-            iconColor={C.blue}
+            iconColor="#475569"
             label="Email Address"
-            value={email}
+            value="manager.kwame@hr360.io"
           />
           <InfoRow
             icon={PhoneIcon}
-            iconColor={C.green}
+            iconColor="#64748B"
             label="Phone Number"
-            value={phone}
+            value="+233 24 567 8901"
           />
           <InfoRow
             icon={BuildingOffice2Icon}
-            iconColor={C.accent}
+            iconColor="#1E293B"
             label="Department"
-            value={department}
+            value="Engineering"
           />
-          <InfoRow
-            icon={IdentificationIcon}
-            iconColor={C.purple}
-            label="Employee ID"
-            value={employeeId}
+          <NavRow
+            icon={CurrencyDollarIcon}
+            iconColor="#475569"
+            title="Payroll Info"
+            subtitle="Bank details and tax settings"
+            onPress={() => mock("Payroll")}
           />
-          <InfoRow
-            icon={CalendarDaysIcon}
-            iconColor={C.amber}
-            label="Hire Date"
-            value={hireDate}
+          <NavRow
+            icon={GlobeAltIcon}
+            iconColor="#1E293B"
+            title="Language"
+            subtitle="English (United Kingdom)"
+            onPress={() => mock("Language")}
             last
           />
         </Card>
@@ -521,14 +525,14 @@ const p = StyleSheet.create({
   rowDivider: {
     height: 1,
     backgroundColor: C.divider,
-    marginLeft: 62,
+    marginLeft: 60,
   },
 
   // Shared row layout
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 13,
+    paddingVertical: 11,
     paddingHorizontal: 16,
     gap: 14,
   },

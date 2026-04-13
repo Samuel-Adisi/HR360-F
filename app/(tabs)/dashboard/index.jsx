@@ -36,6 +36,7 @@ const RED_LIGHT = "#FEF2F2";
 const PURPLE = "#7C3AED";
 const BORDER = "#E2E8F0";
 const MUTED = "#64748B";
+const SLATE = "#475569";
 const SURFACE = "#FFFFFF";
 const BG = "#F8FAFC";
 
@@ -49,28 +50,28 @@ const KPI_DATA = [
   {
     label: "Total\nEmployees",
     value: "142",
-    pct: 1.0,          // 100% — full ring as baseline
+    pct: 1.0,
     color: ACCENT,
     trackColor: "rgba(255,255,255,0.12)",
   },
   {
     label: "Present\nToday",
     value: "118",
-    pct: 118 / 142,    // 83%
+    pct: 118 / 142,
     color: GREEN,
     trackColor: "rgba(255,255,255,0.12)",
   },
   {
     label: "On\nLeave",
     value: "9",
-    pct: 9 / 142,      // 6%
+    pct: 9 / 142,
     color: ORANGE,
     trackColor: "rgba(255,255,255,0.12)",
   },
   {
     label: "Open\nPositions",
     value: "6",
-    pct: 6 / 20,       // out of 20 max headcount
+    pct: 6 / 20,
     color: BLUE,
     trackColor: "rgba(255,255,255,0.12)",
   },
@@ -508,26 +509,43 @@ export default function HRDashboard() {
               ]}
               onPress={() => router.push("/dashboard/payroll")}
             >
-              <LinearGradient
-                colors={[ORANGE, "#EA6B00"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.infoBlockGradient}
-              >
-                <Ionicons name="cash-outline" size={22} color="#fff" />
-                <Text style={[styles.infoBlockLabel, sansText()]}>Payroll</Text>
-                <Text style={[styles.infoBlockValue, monoText()]}>
-                  March 2026
-                </Text>
-                <View style={styles.infoBlockStatusPill}>
-                  <Text style={[styles.infoBlockStatusText, sansText()]}>
+              <View style={styles.infoBlockContent}>
+                <View
+                  style={[
+                    styles.infoBlockIconWrap,
+                    { backgroundColor: SLATE + "08" },
+                  ]}
+                >
+                  <Ionicons name="cash-outline" size={20} color={NAVY} />
+                </View>
+                <View>
+                  <Text style={[styles.infoBlockLabel, sansText()]}>
+                    Payroll
+                  </Text>
+                  <Text style={[styles.infoBlockValue, serifText()]}>
+                    March 2026
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.infoBlockStatusPill,
+                    { backgroundColor: SLATE + "08" },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.infoBlockStatusText,
+                      sansText(),
+                      { color: NAVY },
+                    ]}
+                  >
                     ✓ Processed
                   </Text>
                 </View>
                 <Text style={[styles.infoBlockSub, sansText()]}>
-                  142 employees · GH₵ 1.2M
+                  142 emps · GH₵ 1.2M
                 </Text>
-              </LinearGradient>
+              </View>
             </Pressable>
 
             <Pressable
@@ -537,31 +555,43 @@ export default function HRDashboard() {
               ]}
               onPress={() => router.push("/dashboard/recruitment")}
             >
-              <LinearGradient
-                colors={[BLUE, "#0953A8"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.infoBlockGradient}
-              >
-                <Ionicons name="briefcase-outline" size={22} color="#fff" />
-                <Text style={[styles.infoBlockLabel, sansText()]}>
-                  Recruitment
-                </Text>
-                <Text style={[styles.infoBlockValue, monoText()]}>6 Open</Text>
+              <View style={styles.infoBlockContent}>
+                <View
+                  style={[
+                    styles.infoBlockIconWrap,
+                    { backgroundColor: SLATE + "08" },
+                  ]}
+                >
+                  <Ionicons name="briefcase-outline" size={20} color={NAVY} />
+                </View>
+                <View>
+                  <Text style={[styles.infoBlockLabel, sansText()]}>
+                    Recruitment
+                  </Text>
+                  <Text style={[styles.infoBlockValue, serifText()]}>
+                    6 Open
+                  </Text>
+                </View>
                 <View
                   style={[
                     styles.infoBlockStatusPill,
-                    { backgroundColor: "rgba(255,255,255,0.2)" },
+                    { backgroundColor: SLATE + "08" },
                   ]}
                 >
-                  <Text style={[styles.infoBlockStatusText, sansText()]}>
+                  <Text
+                    style={[
+                      styles.infoBlockStatusText,
+                      sansText(),
+                      { color: NAVY },
+                    ]}
+                  >
                     24 applicants
                   </Text>
                 </View>
                 <Text style={[styles.infoBlockSub, sansText()]}>
-                  8 pending AI screening
+                  8 pending screening
                 </Text>
-              </LinearGradient>
+              </View>
             </Pressable>
           </View>
 
@@ -691,8 +721,8 @@ function QuickAction({ label, iconName, color, onPress }) {
         pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] },
       ]}
     >
-      <View style={[styles.quickActionIcon, { backgroundColor: color }]}>
-        <Ionicons name={iconName} size={24} color="#FFFFFF" />
+      <View style={[styles.quickActionIcon, { backgroundColor: SLATE + "08" }]}>
+        <Ionicons name={iconName} size={20} color={NAVY} />
       </View>
       <Text style={[styles.quickActionLabel, sansText()]}>{label}</Text>
     </Pressable>
@@ -799,12 +829,11 @@ function LeaveRequestRow({
   );
 }
 
-// Telegram-style: solid colored square icon, white icon inside
-function ActivityRow({ icon, color, bg, text, sub, time }) {
+function ActivityRow({ icon, color, text, sub, time }) {
   return (
     <View style={styles.activityRow}>
-      <View style={[styles.activityIconWrap, { backgroundColor: color }]}>
-        <Ionicons name={icon} size={17} color="#FFFFFF" />
+      <View style={[styles.activityIconWrap, { backgroundColor: SLATE + "08" }]}>
+        <Ionicons name={icon} size={16} color={NAVY} />
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text style={[styles.activityText, sansText()]}>{text}</Text>
@@ -1042,13 +1071,13 @@ const styles = StyleSheet.create({
   },
   quickActionBtn: {
     alignItems: "center",
-    gap: 7,
-    width: 72,
+    gap: 6,
+    width: 66,
   },
   quickActionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 46,
+    height: 46,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1174,29 +1203,38 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 16,
     overflow: "hidden",
+    backgroundColor: SURFACE,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
-  infoBlockGradient: {
-    padding: 16,
-    minHeight: 160,
+  infoBlockContent: {
+    padding: 14,
+    minHeight: 140,
     justifyContent: "space-between",
   },
+  infoBlockIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   infoBlockLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
-    color: "rgba(255,255,255,0.7)",
+    color: MUTED,
     textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginTop: 10,
+    letterSpacing: 0.6,
+    marginBottom: 2,
   },
   infoBlockValue: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    marginTop: 2,
+    fontSize: 19,
+    fontWeight: "800",
+    color: NAVY,
+    letterSpacing: -0.5,
   },
   infoBlockStatusPill: {
     alignSelf: "flex-start",
-    backgroundColor: "rgba(255,255,255,0.25)",
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -1204,13 +1242,13 @@ const styles = StyleSheet.create({
   },
   infoBlockStatusText: {
     fontSize: 11,
-    color: "#FFFFFF",
     fontWeight: "600",
   },
   infoBlockSub: {
     fontSize: 11,
-    color: "rgba(255,255,255,0.6)",
+    color: MUTED,
     marginTop: 6,
+    fontWeight: "500",
   },
 
   // Activity feed

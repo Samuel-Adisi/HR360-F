@@ -20,6 +20,7 @@ import {
   IdentificationIcon,
   ShieldCheckIcon,
 } from "react-native-heroicons/outline";
+import { monoText, sansText, serifText } from "../../../../src/theme/fonts";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -54,10 +55,10 @@ const C = {
 
 // ─── Status config ────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  Present: { bg: C.greenBg, text: C.greenText, dot: C.green },
-  Absent: { bg: C.redBg, text: C.redText, dot: C.red },
-  Late: { bg: C.amberBg, text: C.amberText, dot: C.amber },
-  "On Leave": { bg: C.blueBg, text: C.blueText, dot: C.blue },
+  Present: { bg: "#F1F5F9", text: "#0F172A", dot: "#1E293B" },
+  Absent: { bg: "#F8FAFC", text: "#64748B", dot: "#94A3B8" },
+  Late: { bg: "#F1F5F9", text: "#475569", dot: "#64748B" },
+  "On Leave": { bg: "#F8FAFC", text: "#64748B", dot: "#94A3B8" },
 };
 
 // ─── Mock data — mirrors EmployeeAttendanceDetail API response exactly ────────
@@ -293,29 +294,25 @@ function SummaryCard({ summary }) {
       label: "Present",
       value: summary.days_present,
       icon: CheckBadgeIcon,
-      color: C.greenText,
-      bg: C.greenBg,
+      color: "#1E293B",
     },
     {
       label: "Absent",
       value: summary.days_absent,
       icon: ExclamationCircleIcon,
-      color: C.redText,
-      bg: C.redBg,
+      color: "#64748B",
     },
     {
       label: "Late",
       value: summary.days_late,
       icon: ClockIcon,
-      color: C.amberText,
-      bg: C.amberBg,
+      color: "#475569",
     },
     {
       label: "On Leave",
       value: summary.days_on_leave,
       icon: CalendarDaysIcon,
-      color: C.blueText,
-      bg: C.blueBg,
+      color: "#94A3B8",
     },
   ];
 
@@ -323,24 +320,28 @@ function SummaryCard({ summary }) {
     <Card>
       {/* Rate bar */}
       <View style={p.row}>
-        <IconSquare icon={ShieldCheckIcon} color={C.accent} size={34} />
+        <IconSquare icon={ShieldCheckIcon} color="#0F172A" size={34} />
         <View style={p.rowTexts}>
-          <Text style={p.rowLabel}>ATTENDANCE RATE</Text>
+          <Text style={[p.rowLabel, sansText()]}>ATTENDANCE RATE</Text>
           <Text
             style={[
               p.rowValue,
-              { color: C.accent, fontSize: 20, fontWeight: "800" },
+              { color: "#0F172A", fontSize: 24, fontWeight: "800" },
             ]}
           >
             {rate}%
           </Text>
         </View>
         <View style={p.rateRightCol}>
-          <Text style={p.overtimeLabel}>Overtime</Text>
+          <Text style={[p.overtimeLabel, sansText()]}>Overtime</Text>
           <Text
             style={[
               p.overtimeValue,
-              { color: summary.overtime_hours > 0 ? C.amber : C.muted },
+              {
+                color: summary.overtime_hours > 0 ? "#1E293B" : "#CBD5E1",
+                fontWeight: "700",
+                fontSize: 15,
+              },
             ]}
           >
             {summary.overtime_hours}h
@@ -350,7 +351,7 @@ function SummaryCard({ summary }) {
 
       {/* Progress track */}
       <View style={p.track}>
-        <View style={[p.trackFill, { width: `${rate}%` }]} />
+        <View style={[p.trackFill, { width: `${rate}%`, backgroundColor: "#0F172A" }]} />
       </View>
 
       <View style={p.rowDivider} />
@@ -360,10 +361,13 @@ function SummaryCard({ summary }) {
         {tiles.map((t) => {
           const Icon = t.icon;
           return (
-            <View key={t.label} style={[p.tile, { backgroundColor: t.bg }]}>
-              <Icon size={14} color={t.color} strokeWidth={2.5} />
+            <View
+              key={t.label}
+              style={[p.tile, { backgroundColor: t.color + "12" }]}
+            >
+              <Icon size={13} color={t.color} strokeWidth={2.5} />
               <Text style={[p.tileValue, { color: t.color }]}>{t.value}</Text>
-              <Text style={[p.tileLabel, { color: t.color }]}>{t.label}</Text>
+              <Text style={p.tileLabel}>{t.label}</Text>
             </View>
           );
         })}
@@ -375,8 +379,10 @@ function SummaryCard({ summary }) {
       <View style={p.hoursRow}>
         <IconSquare icon={ClockIcon} color={C.slate} size={34} />
         <View style={p.rowTexts}>
-          <Text style={p.rowLabel}>TOTAL HOURS WORKED</Text>
-          <Text style={p.rowValue}>{summary.total_hours_worked}h</Text>
+          <Text style={[p.rowLabel, sansText()]}>TOTAL HOURS WORKED</Text>
+          <Text style={[p.rowValue, { fontSize: 18 }]}>
+            {summary.total_hours_worked}h
+          </Text>
         </View>
       </View>
     </Card>
@@ -759,33 +765,34 @@ const p = StyleSheet.create({
 
   // ── Summary card ──
   track: {
-    height: 5,
+    height: 4,
     backgroundColor: C.divider,
-    borderRadius: 3,
+    borderRadius: 2,
     marginHorizontal: 16,
     marginBottom: 12,
     overflow: "hidden",
   },
-  trackFill: { height: "100%", backgroundColor: C.accent, borderRadius: 3 },
+  trackFill: { height: "100%", backgroundColor: C.accent, borderRadius: 2 },
   tilesRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: 6,
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
   tile: {
     flex: 1,
-    borderRadius: 12,
-    paddingVertical: 10,
+    borderRadius: 10,
+    paddingVertical: 8,
     alignItems: "center",
-    gap: 3,
+    gap: 2,
   },
-  tileValue: { fontSize: 18, fontWeight: "800", letterSpacing: -0.5 },
+  tileValue: { fontSize: 16, fontWeight: "800", letterSpacing: -0.4 },
   tileLabel: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: "700",
+    color: C.muted,
     textTransform: "uppercase",
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
   },
   rateRightCol: { alignItems: "flex-end", gap: 2 },
   overtimeLabel: {

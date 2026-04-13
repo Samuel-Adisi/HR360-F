@@ -57,22 +57,20 @@ const C = {
 const STATUS_CONFIG = {
   Present: {
     label: "Present",
-    bg: C.greenBg,
-    text: C.greenText,
-    dot: C.green,
-    iconColor: C.green,
+    bg: "#F1F5F9",
+    text: "#0F172A",
+    dot: "#1E293B",
+    iconColor: "#1E293B",
   },
   Absent: {
     label: "Absent",
-    bg: C.redBg,
-    text: C.redText,
-    dot: C.red,
-    iconColor: C.red,
+    bg: "#F8FAFC",
+    text: "#64748B",
+    dot: "#94A3B8",
+    iconColor: "#94A3B8",
   },
   Late: {
     label: "Late",
-    bg: C.amberBg,
-    text: C.amberText,
     dot: C.amber,
     iconColor: C.amber,
   },
@@ -232,33 +230,25 @@ function StatsBanner({ counts, total }) {
       label: "Present",
       value: counts["Present"],
       icon: CheckBadgeIcon,
-      color: C.greenText,
-      bg: C.greenBg,
-      borderColor: "#BBF7D0",
+      color: "#1E293B",
     },
     {
       label: "Absent",
       value: counts["Absent"],
       icon: ExclamationCircleIcon,
-      color: C.redText,
-      bg: C.redBg,
-      borderColor: "#FECACA",
+      color: "#64748B",
     },
     {
       label: "Late",
       value: counts["Late"],
       icon: ClockIcon,
-      color: C.amberText,
-      bg: C.amberBg,
-      borderColor: "#FDE68A",
+      color: "#475569",
     },
     {
       label: "On Leave",
       value: counts["On Leave"],
       icon: CalendarDaysIcon,
-      color: C.blueText,
-      bg: C.blueBg,
-      borderColor: "#BFDBFE",
+      color: "#94A3B8",
     },
   ];
 
@@ -267,14 +257,14 @@ function StatsBanner({ counts, total }) {
       {/* Attendance rate bar */}
       <View style={sb.rateRow}>
         <View style={sb.rateLabelRow}>
-          <UserGroupIcon size={13} color={C.accent} strokeWidth={2.5} />
+          <UserGroupIcon size={13} color="#0F172A" strokeWidth={2.5} />
           <Text style={sb.rateLabel}>Today's Attendance Rate</Text>
         </View>
         <Text style={sb.rateValue}>{presentRate}%</Text>
       </View>
 
       <View style={sb.track}>
-        <View style={[sb.fill, { width: `${presentRate}%` }]} />
+        <View style={[sb.fill, { width: `${presentRate}%`, backgroundColor: "#0F172A" }]} />
       </View>
 
       {/* Stat tiles */}
@@ -282,20 +272,12 @@ function StatsBanner({ counts, total }) {
         {tiles.map((tile) => {
           const Icon = tile.icon;
           return (
-            <View
-              key={tile.label}
-              style={[
-                sb.tile,
-                { backgroundColor: tile.bg, borderColor: tile.borderColor },
-              ]}
-            >
-              <Icon size={15} color={tile.color} strokeWidth={2.5} />
+            <View key={tile.label} style={sb.tile}>
+              <Icon size={13} color={tile.color} strokeWidth={2.5} />
               <Text style={[sb.tileValue, { color: tile.color }]}>
                 {tile.value}
               </Text>
-              <Text style={[sb.tileLabel, { color: tile.color }]}>
-                {tile.label}
-              </Text>
+              <Text style={sb.tileLabel}>{tile.label}</Text>
             </View>
           );
         })}
@@ -619,11 +601,11 @@ export default function EmployeeAttendanceListScreen() {
 const sb = StyleSheet.create({
   container: {
     backgroundColor: C.white,
-    borderRadius: 18,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: C.border,
-    padding: 16,
-    gap: 12,
+    padding: 12,
+    gap: 10,
   },
   rateRow: {
     flexDirection: "row",
@@ -633,54 +615,57 @@ const sb = StyleSheet.create({
   rateLabelRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 5,
   },
   rateLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
     color: C.sub,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   rateValue: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "800",
     color: C.accent,
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
   },
   track: {
-    height: 6,
+    height: 4,
     backgroundColor: C.divider,
-    borderRadius: 3,
+    borderRadius: 2,
     overflow: "hidden",
   },
   fill: {
     height: "100%",
     backgroundColor: C.accent,
-    borderRadius: 3,
+    borderRadius: 2,
   },
   tilesRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: 6,
   },
   tile: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    paddingVertical: 10,
+    borderColor: C.divider,
+    backgroundColor: C.bg, // Neutral light background
+    paddingVertical: 8,
     alignItems: "center",
-    gap: 3,
+    gap: 2,
   },
   tileValue: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "800",
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
   },
   tileLabel: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: "700",
+    color: C.muted,
     textTransform: "uppercase",
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
   },
 });
 
