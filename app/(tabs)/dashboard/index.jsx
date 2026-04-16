@@ -405,7 +405,7 @@ export default function HRDashboard() {
               label="Post Job"
               iconName="briefcase"
               color={BLUE}
-              onPress={() => router.push("/recruitment/new")}
+              onPress={() => router.push("/dashboard/recruitment/new")}
             />
             <QuickAction
               label="Run Payroll"

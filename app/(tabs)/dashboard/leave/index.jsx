@@ -1,7 +1,9 @@
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   Alert,
+  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -10,6 +12,7 @@ import {
   View,
 } from "react-native";
 import {
+  ArrowLeftIcon,
   BanknotesIcon,
   BriefcaseIcon,
   CalendarDaysIcon,
@@ -267,23 +270,20 @@ const STATUS_CFG = {
   },
 };
 
-const LEAVE_TYPE_CFG = {
-  Annual: { color: C.accent, bg: C.accentLight, icon: CalendarDaysIcon },
-  Sick: { color: C.red, bg: C.redBg, icon: ExclamationTriangleIcon },
-  Casual: { color: C.blue, bg: C.blueBg, icon: BriefcaseIcon },
-  Maternity: { color: C.purple, bg: C.purpleBg, icon: FaceSmileIcon },
-  Paternity: { color: C.orange, bg: C.orangeBg, icon: FaceSmileIcon },
-  Unpaid: { color: C.muted, bg: C.divider, icon: BanknotesIcon },
-};
-
 function leaveTypeCfg(type) {
-  return (
-    LEAVE_TYPE_CFG[type] || {
-      color: C.sub,
-      bg: C.divider,
-      icon: DocumentTextIcon,
-    }
-  );
+  const icons = {
+    Annual: CalendarDaysIcon,
+    Sick: ExclamationTriangleIcon,
+    Casual: BriefcaseIcon,
+    Maternity: FaceSmileIcon,
+    Paternity: FaceSmileIcon,
+    Unpaid: BanknotesIcon,
+  };
+  return {
+    color: C.accent,
+    bg: C.accentLight,
+    icon: icons[type] || DocumentTextIcon,
+  };
 }
 
 // ─── Shared sub-components ────────────────────────────────────────────────────
@@ -318,25 +318,114 @@ function StatusBadge({ status }) {
   );
 }
 
-function SectionLabel({ title, badge, onAction, actionLabel }) {
+function SectionLabel({
+  title,
+  badge,
+  onAction,
+  actionLabel,
+  selectMode,
+  onToggleSelect,
+  selectedCount,
+  totalCount,
+  onToggleAll,
+  onBulkApprove,
+  onBulkReject,
+}) {
   return (
-    <View style={sh.sectionRow}>
-      <View style={sh.sectionLeft}>
-        <View style={sh.sectionBar} />
-        <Text style={sh.sectionTitle}>{title}</Text>
-        {badge != null && (
-          <View style={sh.sectionBadge}>
-            <Text style={sh.sectionBadgeText}>{badge}</Text>
-          </View>
-        )}
+    <View style={{ paddingHorizontal: 16, marginTop: 16, marginBottom: 10 }}>
+      <View style={sh.sectionRow}>
+        <View style={sh.sectionLeft}>
+          <View style={sh.sectionBar} />
+          <Text style={sh.sectionTitle}>{title}</Text>
+          {badge != null && (
+            <View style={sh.sectionBadge}>
+              <Text style={sh.sectionBadgeText}>{badge}</Text>
+            </View>
+          )}
+        </View>
+        {onToggleSelect ? (
+          <Pressable
+            onPress={onToggleSelect}
+            style={({ pressed }) => [
+              sl.toggleBtn,
+              selectMode && sl.toggleBtnActive,
+              pressed && { opacity: 0.7 },
+            ]}
+          >
+            <Text
+              style={[sl.toggleBtnText, selectMode && sl.toggleBtnTextActive]}
+            >
+              {selectMode ? "Cancel" : "Select"}
+            </Text>
+          </Pressable>
+        ) : onAction ? (
+          <Pressable
+            onPress={onAction}
+            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+          >
+            <Text style={sh.sectionAction}>{actionLabel}</Text>
+          </Pressable>
+        ) : null}
       </View>
-      {onAction && (
-        <Pressable
-          onPress={onAction}
-          style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-        >
-          <Text style={sh.sectionAction}>{actionLabel}</Text>
-        </Pressable>
+
+      {selectMode && (
+        <View style={sl.toolbar}>
+          <Pressable onPress={onToggleAll} style={sl.selectAllRow}>
+            <View
+              style={[
+                sl.checkbox,
+                selectedCount === totalCount && sl.checkboxChecked,
+                selectedCount > 0 &&
+                  selectedCount < totalCount &&
+                  sl.checkboxIndeterminate,
+              ]}
+            >
+              {selectedCount > 0 && (
+                <View
+                  style={
+                    selectedCount === totalCount
+                      ? sl.checkmark
+                      : sl.indeterminateLine
+                  }
+                />
+              )}
+            </View>
+            <Text style={sl.selectAllText}>
+              {selectedCount === totalCount
+                ? "Deselect all"
+                : `Select all (${totalCount})`}
+            </Text>
+          </Pressable>
+
+          <View style={sl.actionBtns}>
+            <Pressable
+              onPress={onBulkReject}
+              disabled={!selectedCount}
+              style={({ pressed }) => [
+                sl.actionBtn,
+                sl.rejectActionBtn,
+                (!selectedCount || pressed) && { opacity: 0.5 },
+              ]}
+            >
+              <XCircleIcon size={14} color={C.red} strokeWidth={2.5} />
+              <Text style={sl.rejectActionText}>Reject</Text>
+            </Pressable>
+            <Pressable
+              onPress={onBulkApprove}
+              disabled={!selectedCount}
+              style={({ pressed }) => [
+                sl.actionBtn,
+                sl.approveActionBtn,
+                (!selectedCount || pressed) && { opacity: 0.5 },
+              ]}
+            >
+              <CheckCircleIcon size={14} color={C.white} strokeWidth={2.5} />
+              <Text style={sl.approveActionText}>
+                Approve{selectedCount > 0 ? ` (${selectedCount})` : ""}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
       )}
     </View>
   );
@@ -462,15 +551,36 @@ function BalanceCard({ balance }) {
   );
 }
 
-// ─── Pending Request Card ─────────────────────────────────────────────────────
-function PendingCard({ item, onApprove, onReject }) {
+function PendingCard({
+  item,
+  onApprove,
+  onReject,
+  selectMode,
+  selected,
+  onToggle,
+}) {
   const cfg = leaveTypeCfg(item.leave_type);
   const Icon = cfg.icon;
 
   return (
-    <View style={pc.card}>
+    <Pressable
+      onPress={() => selectMode && onToggle(item.id)}
+      style={[pc.card, selected && pc.cardSelected]}
+    >
       <View style={pc.top}>
-        <IconSquare icon={Icon} color={cfg.color} size={36} />
+        {selectMode ? (
+          <Pressable
+            onPress={() => onToggle(item.id)}
+            style={[sl.checkbox, selected && sl.checkboxChecked]}
+          >
+            {selected && <View style={sl.checkmark} />}
+          </Pressable>
+        ) : (
+          <Image
+            source={{ uri: getAvatarUri(item.employee_name) }}
+            style={pc.avatar}
+          />
+        )}
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={pc.name}>{item.employee_name}</Text>
           <Text style={[pc.type, { color: cfg.color }]}>
@@ -480,7 +590,6 @@ function PendingCard({ item, onApprove, onReject }) {
         <StatusBadge status={item.status} />
       </View>
 
-      {/* Date range + days */}
       <View style={pc.dateRow}>
         <CalendarDaysIcon size={13} color={C.muted} strokeWidth={2} />
         <Text style={pc.dateText}>
@@ -491,7 +600,6 @@ function PendingCard({ item, onApprove, onReject }) {
         </View>
       </View>
 
-      {/* Reason */}
       {item.reason ? (
         <View style={pc.reasonRow}>
           <DocumentTextIcon size={12} color={C.muted} strokeWidth={2} />
@@ -501,7 +609,6 @@ function PendingCard({ item, onApprove, onReject }) {
         </View>
       ) : null}
 
-      {/* Balance info from API */}
       <View style={pc.balanceRow}>
         <Text style={pc.balanceMeta}>
           Balance:{" "}
@@ -513,24 +620,28 @@ function PendingCard({ item, onApprove, onReject }) {
         <Text style={pc.appliedAt}>Applied {fmtDate(item.created_at)}</Text>
       </View>
 
-      {/* Actions */}
-      <View style={pc.actions}>
-        <Pressable
-          onPress={() => onReject(item.id)}
-          style={({ pressed }) => [pc.rejectBtn, pressed && { opacity: 0.7 }]}
-        >
-          <XCircleIcon size={15} color={C.red} strokeWidth={2.5} />
-          <Text style={pc.rejectText}>Reject</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => onApprove(item.id)}
-          style={({ pressed }) => [pc.approveBtn, pressed && { opacity: 0.85 }]}
-        >
-          <CheckCircleIcon size={15} color={C.white} strokeWidth={2.5} />
-          <Text style={pc.approveText}>Approve</Text>
-        </Pressable>
-      </View>
-    </View>
+      {!selectMode && (
+        <View style={pc.actions}>
+          <Pressable
+            onPress={() => onReject(item.id)}
+            style={({ pressed }) => [pc.rejectBtn, pressed && { opacity: 0.7 }]}
+          >
+            <XCircleIcon size={15} color={C.red} strokeWidth={2.5} />
+            <Text style={pc.rejectText}>Reject</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => onApprove(item.id)}
+            style={({ pressed }) => [
+              pc.approveBtn,
+              pressed && { opacity: 0.85 },
+            ]}
+          >
+            <CheckCircleIcon size={15} color={C.white} strokeWidth={2.5} />
+            <Text style={pc.approveText}>Approve</Text>
+          </Pressable>
+        </View>
+      )}
+    </Pressable>
   );
 }
 
@@ -593,43 +704,89 @@ function ByTypeRow({ item, total, last }) {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function LeaveScreen() {
+  // add router inside the component
+  const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [pendingList, setPendingList] = useState(MOCK_PENDING);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 900);
   }, []);
 
+  const toggleSelectMode = useCallback(() => {
+    setSelectMode((v) => {
+      if (v) setSelectedIds(new Set());
+      return !v;
+    });
+  }, []);
+
+  const toggleItem = useCallback((id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleAll = useCallback(() => {
+    setSelectedIds((prev) =>
+      prev.size === pendingList.length
+        ? new Set()
+        : new Set(pendingList.map((r) => r.id)),
+    );
+  }, [pendingList]);
+
+  const handleBulkAction = useCallback(
+    (action) => {
+      if (selectedIds.size === 0) return;
+      const verb = action === "approve" ? "Approve" : "Reject";
+      Alert.alert(
+        `${verb} ${selectedIds.size} request${selectedIds.size > 1 ? "s" : ""}?`,
+        undefined,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: verb,
+            style: action === "reject" ? "destructive" : "default",
+            onPress: () => {
+              // WIRE: POST /leave/bulk_approve/ or bulk_reject/ with ids:[...selectedIds]
+              setPendingList((prev) =>
+                prev.filter((r) => !selectedIds.has(r.id)),
+              );
+              setSelectedIds(new Set());
+              setSelectMode(false);
+            },
+          },
+        ],
+      );
+    },
+    [selectedIds],
+  );
+
   const handleApprove = useCallback((id) => {
     Alert.alert("Approve Leave", "Approve this leave request?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Approve",
-        onPress: () => {
-          // WIRE: POST /leave/{id}/approve/ or bulk_approve with ids:[id]
-          setPendingList((prev) => prev.filter((r) => r.id !== id));
-        },
+        onPress: () =>
+          setPendingList((prev) => prev.filter((r) => r.id !== id)),
       },
     ]);
   }, []);
 
   const handleReject = useCallback((id) => {
-    Alert.alert(
-      "Reject Leave",
-      "Reject this leave request? A rejection reason will be required.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Reject",
-          style: "destructive",
-          onPress: () => {
-            // WIRE: POST /leave/{id}/reject/ with rejection_reason
-            setPendingList((prev) => prev.filter((r) => r.id !== id));
-          },
-        },
-      ],
-    );
+    Alert.alert("Reject Leave", "Reject this leave request?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Reject",
+        style: "destructive",
+        onPress: () =>
+          setPendingList((prev) => prev.filter((r) => r.id !== id)),
+      },
+    ]);
   }, []);
 
   const stats = MOCK_STATISTICS;
@@ -642,15 +799,19 @@ export default function LeaveScreen() {
       <SafeAreaView edges={["top"]} style={s.header}>
         <View style={s.titleRow}>
           <View style={s.titleLeft}>
+            {/* Back Button */}
+            <Pressable
+              onPress={() => router.replace("/dashboard")}
+              style={s.backBtn}
+            >
+              <ArrowLeftIcon size={20} color={C.navy} strokeWidth={2.5} />
+            </Pressable>
+
             <View style={s.iconBadge}>
               <DocumentTextIcon size={18} color={C.accent} strokeWidth={2} />
             </View>
             <View>
               <Text style={s.title}>Leave</Text>
-              <Text style={s.subtitle}>
-                {stats.pending} pending · {onLeaveToday.total_on_leave} out
-                today
-              </Text>
             </View>
           </View>
           <Pressable
@@ -658,9 +819,7 @@ export default function LeaveScreen() {
               s.addBtn,
               pressed && { opacity: 0.8, transform: [{ scale: 0.92 }] },
             ]}
-            onPress={() =>
-              Alert.alert("Coming soon", "Apply for leave form coming shortly.")
-            }
+            onPress={() => navigation.navigate("ApplyLeave")}
           >
             <PlusCircleIcon size={18} color={C.white} strokeWidth={2.5} />
           </Pressable>
@@ -713,10 +872,13 @@ export default function LeaveScreen() {
         <SectionLabel
           title="Pending Approvals"
           badge={pendingList.length}
-          onAction={() =>
-            Alert.alert("Coming soon", "Bulk approve coming shortly.")
-          }
-          actionLabel="Bulk approve"
+          selectMode={selectMode}
+          onToggleSelect={toggleSelectMode}
+          selectedCount={selectedIds.size}
+          totalCount={pendingList.length}
+          onToggleAll={toggleAll}
+          onBulkApprove={() => handleBulkAction("approve")}
+          onBulkReject={() => handleBulkAction("reject")}
         />
         {pendingList.length === 0 ? (
           <View style={s.emptyWrap}>
@@ -732,6 +894,9 @@ export default function LeaveScreen() {
                 item={item}
                 onApprove={handleApprove}
                 onReject={handleReject}
+                selectMode={selectMode}
+                selected={selectedIds.has(item.id)}
+                onToggle={toggleItem}
               />
             ))}
           </View>
@@ -779,7 +944,6 @@ const sh = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
     marginTop: 16,
     marginBottom: 10,
   },
@@ -811,6 +975,15 @@ const sh = StyleSheet.create({
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
   scroll: { paddingBottom: 20 },
+
+  backBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: C.divider,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   header: {
     backgroundColor: C.white,
@@ -992,6 +1165,12 @@ const bc = StyleSheet.create({
 
 // ─── Pending card styles ──────────────────────────────────────────────────────
 const pc = StyleSheet.create({
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: C.accentMid,
+  },
   card: {
     backgroundColor: C.white,
     borderRadius: 16,
@@ -999,6 +1178,10 @@ const pc = StyleSheet.create({
     borderColor: C.border,
     padding: 14,
     gap: 10,
+  },
+  cardSelected: {
+    borderColor: C.accent,
+    backgroundColor: C.accentLight,
   },
   top: { flexDirection: "row", alignItems: "center" },
   name: { fontSize: 15, fontWeight: "700", color: C.navy, letterSpacing: -0.2 },
@@ -1085,4 +1268,103 @@ const btr = StyleSheet.create({
   },
   fill: { height: "100%", borderRadius: 3 },
   divider: { height: 1, backgroundColor: C.divider, marginHorizontal: 14 },
+});
+const sl = StyleSheet.create({
+  toggleBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: C.border,
+    backgroundColor: C.white,
+  },
+  toggleBtnActive: {
+    borderColor: C.accent,
+    backgroundColor: C.accentLight,
+  },
+  toggleBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: C.sub,
+  },
+  toggleBtnTextActive: {
+    color: C.accent,
+  },
+  toolbar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: C.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: C.border,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 8,
+    gap: 12,
+  },
+  selectAllRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+  },
+  selectAllText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: C.sub,
+  },
+
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: C.border,
+    backgroundColor: C.white,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxChecked: {
+    backgroundColor: C.accent,
+    borderColor: C.accent,
+  },
+  checkboxIndeterminate: {
+    backgroundColor: C.accentLight,
+    borderColor: C.accent,
+  },
+  checkmark: {
+    width: 10,
+    height: 6,
+    borderLeftWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: C.white,
+    transform: [{ rotate: "-45deg" }, { translateY: -1 }],
+  },
+  indeterminateLine: {
+    width: 10,
+    height: 2,
+    backgroundColor: C.accent,
+    borderRadius: 1,
+  },
+  actionBtns: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  actionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+  },
+  rejectActionBtn: {
+    borderWidth: 1.5,
+    borderColor: C.red,
+    backgroundColor: C.redBg,
+  },
+  rejectActionText: { fontSize: 12, fontWeight: "700", color: C.red },
+  approveActionBtn: { backgroundColor: C.accent },
+  approveActionText: { fontSize: 12, fontWeight: "700", color: C.white },
 });
