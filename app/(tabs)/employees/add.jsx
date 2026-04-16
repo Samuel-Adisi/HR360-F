@@ -983,7 +983,7 @@ export default function AddEmployeeScreen() {
           {/* ── Bottom CTA ── */}
           <View style={s.bottomCTA}>
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => router.replace("/dashboard")}
               style={({ pressed }) => [
                 s.cancelBtn,
                 pressed && { opacity: 0.7 },

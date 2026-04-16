@@ -608,7 +608,7 @@ export default function JobPostingsScreen() {
               <BriefcaseIcon size={18} color={C.accent} strokeWidth={2} />
             </View>
             <View>
-              <Text style={s.title}>Recruitment</Text>
+              <Text style={s.title}>Job Posting</Text>
               <Text style={s.subtitle}>
                 {stats.total_postings} postings · {stats.active_postings} active
               </Text>
