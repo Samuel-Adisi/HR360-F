@@ -10,12 +10,11 @@ import {
 } from "expo-router/unstable-native-tabs";
 import { Platform, StyleSheet, View } from "react-native";
 
-import { BRAND_TEAL } from "../../src/theme/navigationTheme";
-
-import { FloatingTabBar } from "../../src/components/FloatingTabBar";
+import { FloatingTabBar } from "../../../src/components/FloatingTabBar";
+import { BRAND_TEAL } from "../../../src/theme/navigationTheme";
 
 export const unstable_settings = {
-  initialRouteName: "dashboard",
+  initialRouteName: "dashboard11",
 };
 
 function NativeShell() {
@@ -52,29 +51,45 @@ function NativeShell() {
           />
           <Label hidden />
         </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="employees">
-          <Icon
-            sf="person.3.fill"
-            symbolScale="small"
-            androidSrc={<VectorIcon family={MaterialIcons} name="groups" />}
-          />
-          <Label hidden />
-        </NativeTabs.Trigger>
+
         <NativeTabs.Trigger name="attendance">
           <Icon
-            sf="calendar"
+            sf="clock.fill"
             symbolScale="small"
             androidSrc={
-              <VectorIcon family={MaterialIcons} name="calendar-today" />
+              <VectorIcon family={MaterialIcons} name="access-time" />
             }
           />
           <Label hidden />
         </NativeTabs.Trigger>
+
+        <NativeTabs.Trigger name="leave">
+          <Icon
+            sf="calendar.badge.clock"
+            symbolScale="small"
+            androidSrc={
+              <VectorIcon family={MaterialIcons} name="event-available" />
+            }
+          />
+          <Label hidden />
+        </NativeTabs.Trigger>
+
+        <NativeTabs.Trigger name="payslips">
+          <Icon
+            sf="doc.text.fill"
+            symbolScale="small"
+            androidSrc={<VectorIcon family={MaterialIcons} name="receipt" />}
+          />
+          <Label hidden />
+        </NativeTabs.Trigger>
+
         <NativeTabs.Trigger name="profile">
           <Icon
             sf="person.crop.circle.fill"
             symbolScale="small"
-            androidSrc={<VectorIcon family={MaterialIcons} name="account-circle" />}
+            androidSrc={
+              <VectorIcon family={MaterialIcons} name="account-circle" />
+            }
           />
           <Label hidden />
         </NativeTabs.Trigger>
@@ -104,8 +119,9 @@ function WebTabs() {
         }}
       >
         <Tabs.Screen name="dashboard" />
-        <Tabs.Screen name="employees" />
         <Tabs.Screen name="attendance" />
+        <Tabs.Screen name="leave" />
+        <Tabs.Screen name="payslips" />
         <Tabs.Screen name="profile" />
       </Tabs>
     </View>

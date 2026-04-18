@@ -494,7 +494,7 @@ export default function AddEmployeeScreen() {
       <SafeAreaView edges={["top"]} style={s.navbar}>
         <Pressable
           style={({ pressed }) => [s.navBtn, pressed && { opacity: 0.6 }]}
-          onPress={() => router.back()}
+          onPress={() => router.push('/employees')}
         >
           <XMarkIcon size={20} color={C.navy} strokeWidth={2.2} />
         </Pressable>

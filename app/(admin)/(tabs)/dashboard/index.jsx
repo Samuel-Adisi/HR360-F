@@ -19,7 +19,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Circle, G, Svg } from "react-native-svg";
-import { monoText, sansText, serifText } from "../../../src/theme/fonts";
+import { monoText, sansText, serifText } from "../../../../src/theme/fonts";
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────
 const ACCENT = "#0F766E";
@@ -399,13 +399,13 @@ export default function HRDashboard() {
               label="Add Employee"
               iconName="person-add"
               color={ACCENT}
-              onPress={() => router.navigate("/employees/add")}
+              onPress={() => router.push("/employees/add")}
             />
             <QuickAction
               label="Post Job"
               iconName="briefcase"
               color={BLUE}
-              onPress={() => router.push("/dashboard/recruitment")}
+              onPress={() => router.push("/recruitment")}
             />
             <QuickAction
               label="Run Payroll"
@@ -417,7 +417,7 @@ export default function HRDashboard() {
               label="Announce"
               iconName="megaphone"
               color={PURPLE}
-              onPress={() => router.push("/dashboard/announcements")}
+              onPress={() => router.push("/announcements")}
             />
             <QuickAction
               label="Attendance"
@@ -435,7 +435,7 @@ export default function HRDashboard() {
               label="Leaves"
               iconName="document-text"
               color="#0891B2"
-              onPress={() => router.push("/dashboard/leave")}
+              onPress={() => router.push("/leave")}
             />
             <QuickAction
               label="Settings"

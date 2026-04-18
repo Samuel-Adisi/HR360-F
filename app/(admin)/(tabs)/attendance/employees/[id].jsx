@@ -1,4 +1,3 @@
-import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -13,9 +12,13 @@ import {
 import {
   BuildingOffice2Icon,
   CalendarDaysIcon,
+  CheckBadgeIcon,
+  ClockIcon,
   EnvelopeIcon,
+  ExclamationCircleIcon,
   FingerPrintIcon,
   IdentificationIcon,
+  ShieldCheckIcon,
 } from "react-native-heroicons/outline";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -285,64 +288,101 @@ function TodayCard({ today }) {
 // ─── Summary Stats Card ───────────────────────────────────────────────────────
 function SummaryCard({ summary }) {
   const rate = summary.attendance_rate;
-
   const tiles = [
-    { label: "Present", value: summary.days_present },
-    { label: "Absent", value: summary.days_absent },
-    { label: "Late", value: summary.days_late },
-    { label: "On Leave", value: summary.days_on_leave },
+    {
+      label: "Present",
+      value: summary.days_present,
+      icon: CheckBadgeIcon,
+      color: C.greenText,
+      bg: C.greenBg,
+    },
+    {
+      label: "Absent",
+      value: summary.days_absent,
+      icon: ExclamationCircleIcon,
+      color: C.redText,
+      bg: C.redBg,
+    },
+    {
+      label: "Late",
+      value: summary.days_late,
+      icon: ClockIcon,
+      color: C.amberText,
+      bg: C.amberBg,
+    },
+    {
+      label: "On Leave",
+      value: summary.days_on_leave,
+      icon: CalendarDaysIcon,
+      color: C.blueText,
+      bg: C.blueBg,
+    },
   ];
 
   return (
-    <LinearGradient
-      colors={["#0F172A", "#1E293B", "#243044"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={sum.container}
-    >
-      {/* ── Top row: rate bar + circle ── */}
-      <View style={sum.topRow}>
-        <View style={sum.topLeft}>
-          <Text style={sum.title}>Attendance Rate</Text>
-          <Text style={sum.periodLabel}>
-            {summary.total_hours_worked}h worked · {summary.overtime_hours}h
-            overtime
-          </Text>
-          <View style={sum.track}>
-            <View style={[sum.fill, { width: `${rate}%` }]} />
-          </View>
-          <Text style={sum.rateSmall}>
-            {summary.days_present +
-              summary.days_absent +
-              summary.days_late +
-              summary.days_on_leave}{" "}
-            days tracked
+    <Card>
+      {/* Rate bar */}
+      <View style={p.row}>
+        <IconSquare icon={ShieldCheckIcon} color={C.accent} size={34} />
+        <View style={p.rowTexts}>
+          <Text style={p.rowLabel}>ATTENDANCE RATE</Text>
+          <Text
+            style={[
+              p.rowValue,
+              { color: C.accent, fontSize: 20, fontWeight: "800" },
+            ]}
+          >
+            {rate}%
           </Text>
         </View>
-        <View style={sum.circle}>
-          <Text style={sum.circleNum}>{rate}%</Text>
-          <Text style={sum.circleLabel}>present</Text>
+        <View style={p.rateRightCol}>
+          <Text style={p.overtimeLabel}>Overtime</Text>
+          <Text
+            style={[
+              p.overtimeValue,
+              { color: summary.overtime_hours > 0 ? C.amber : C.muted },
+            ]}
+          >
+            {summary.overtime_hours}h
+          </Text>
         </View>
       </View>
 
-      {/* ── Stat tiles ── */}
-      <View style={sum.tiles}>
-        {tiles.map((t) => (
-          <LinearGradient
-            key={t.label}
-            colors={["#0F172A", "#1E293B"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={sum.tile}
-          >
-            <Text style={sum.tileNum}>{t.value}</Text>
-            <Text style={sum.tileLabel}>{t.label}</Text>
-          </LinearGradient>
-        ))}
+      {/* Progress track */}
+      <View style={p.track}>
+        <View style={[p.trackFill, { width: `${rate}%` }]} />
       </View>
-    </LinearGradient>
+
+      <View style={p.rowDivider} />
+
+      {/* Stat tiles */}
+      <View style={p.tilesRow}>
+        {tiles.map((t) => {
+          const Icon = t.icon;
+          return (
+            <View key={t.label} style={[p.tile, { backgroundColor: t.bg }]}>
+              <Icon size={14} color={t.color} strokeWidth={2.5} />
+              <Text style={[p.tileValue, { color: t.color }]}>{t.value}</Text>
+              <Text style={[p.tileLabel, { color: t.color }]}>{t.label}</Text>
+            </View>
+          );
+        })}
+      </View>
+
+      <View style={p.rowDivider} />
+
+      {/* Hours summary */}
+      <View style={p.hoursRow}>
+        <IconSquare icon={ClockIcon} color={C.slate} size={34} />
+        <View style={p.rowTexts}>
+          <Text style={p.rowLabel}>TOTAL HOURS WORKED</Text>
+          <Text style={p.rowValue}>{summary.total_hours_worked}h</Text>
+        </View>
+      </View>
+    </Card>
   );
 }
+
 // ─── History Row ──────────────────────────────────────────────────────────────
 function HistoryRow({ record, last }) {
   const cfg = STATUS_CONFIG[record.status] || STATUS_CONFIG["Absent"];
@@ -447,10 +487,8 @@ export default function EmployeeAttendanceDetailScreen() {
               ]}
             />
           </View>
-
           <Text style={p.heroName}>{employee.name}</Text>
           <Text style={p.heroRole}>{employee.department}</Text>
-
           <View style={p.heroBioRow}>
             <View style={p.bioChip}>
               <EnvelopeIcon size={11} color={C.sub} strokeWidth={2.5} />
@@ -459,10 +497,8 @@ export default function EmployeeAttendanceDetailScreen() {
               </Text>
             </View>
           </View>
-
           <StatusBadge status={today.status} />
         </View>
-
         {/* ── Employee Info ── */}
         <View style={p.section}>
           <GroupLabel title="Employee Info" />
@@ -488,7 +524,6 @@ export default function EmployeeAttendanceDetailScreen() {
             />
           </Card>
         </View>
-
         {/* ── Period picker ── */}
         <View style={p.section}>
           <GroupLabel title="Attendance Period" />
@@ -519,19 +554,16 @@ export default function EmployeeAttendanceDetailScreen() {
             {period.total_days} days
           </Text>
         </View>
-
         {/* ── Today's Status ── */}
         <View style={p.section}>
           <GroupLabel title="Today" />
           <TodayCard today={today} />
         </View>
-
         {/* ── Summary ── */}
         <View style={p.section}>
           <GroupLabel title="Summary" />
           <SummaryCard summary={summary} />
         </View>
-
         {/* ── History ── */}
         <View style={p.section}>
           <GroupLabel title="Attendance History" />
@@ -545,7 +577,6 @@ export default function EmployeeAttendanceDetailScreen() {
             ))}
           </Card>
         </View>
-
         <View style={{ height: 60 }} />
       </ScrollView>
     </View>
@@ -787,95 +818,4 @@ const p = StyleSheet.create({
   historyRight: { alignItems: "flex-end", gap: 4 },
   historyHours: { fontSize: 12, fontWeight: "700", color: C.navy },
   manualTag: { fontSize: 9, fontWeight: "600", color: C.muted },
-});
-
-const sum = StyleSheet.create({
-  container: {
-    borderRadius: 18,
-    padding: 18,
-    gap: 16,
-  },
-  topRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-  },
-  topLeft: { flex: 1, gap: 6 },
-  title: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#FFFFFF",
-    letterSpacing: -0.3,
-  },
-  periodLabel: {
-    fontSize: 11,
-    color: "rgba(255,255,255,0.5)",
-    fontWeight: "500",
-  },
-  track: {
-    height: 5,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  fill: {
-    height: "100%",
-    backgroundColor: "#0A66C2", // ← blue, matches list screen
-    borderRadius: 3,
-  },
-  rateSmall: {
-    fontSize: 10,
-    color: "rgba(255,255,255,0.45)",
-    fontWeight: "500",
-  },
-  circle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "rgba(255,255,255,0.10)",
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.18)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  circleNum: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#FFFFFF",
-    letterSpacing: -0.5,
-  },
-  circleLabel: {
-    fontSize: 9,
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.6)",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
-  tiles: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  tile: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 6,
-    alignItems: "center",
-    gap: 5,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-  },
-  tileNum: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#FFFFFF",
-    letterSpacing: -0.5,
-  },
-  tileLabel: {
-    fontSize: 9,
-    fontWeight: "700",
-    color: "rgba(255,255,255,0.75)",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
 });

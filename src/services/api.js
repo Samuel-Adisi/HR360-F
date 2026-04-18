@@ -18,8 +18,9 @@ const mockJsonResponse = (config, { data, status = 200 } = {}) => ({
 });
 
 const MOCK_USER = {
-  username: "demo_user",
+  username: "Samuel",
   full_name: "Demo User",
+  role: "employee",
   /** Shown on dashboard when set; omit or null to use initials */
   avatar:
     "https://ui-avatars.com/api/?name=Demo+User&size=128&background=0f766e&color=fff",
@@ -113,6 +114,7 @@ const mockAdapter = async (config) => {
         access_token: "mock_access_token",
         refresh_token: "mock_refresh_token",
         user: MOCK_USER,
+        role: "employee",
         message: "Login successful",
       },
       status: 200,
@@ -124,28 +126,40 @@ const mockAdapter = async (config) => {
   }
 
   // Face auth
-  if (method === "get" && (url === "/api/face/status" || url === "/api/face/status/")) {
+  if (
+    method === "get" &&
+    (url === "/api/face/status" || url === "/api/face/status/")
+  ) {
     return mockJsonResponse(config, {
       data: { has_face_auth: false },
       status: 200,
     });
   }
 
-  if (method === "post" && (url === "/api/face/register" || url === "/api/face/register/")) {
+  if (
+    method === "post" &&
+    (url === "/api/face/register" || url === "/api/face/register/")
+  ) {
     return mockJsonResponse(config, {
       data: { message: "Face registered" },
       status: 201,
     });
   }
 
-  if (method === "delete" && (url === "/api/face/delete" || url === "/api/face/delete/")) {
+  if (
+    method === "delete" &&
+    (url === "/api/face/delete" || url === "/api/face/delete/")
+  ) {
     return mockJsonResponse(config, {
       data: { message: "Face deleted" },
       status: 200,
     });
   }
 
-  if (method === "post" && (url === "/api/face/login" || url === "/api/face/login/")) {
+  if (
+    method === "post" &&
+    (url === "/api/face/login" || url === "/api/face/login/")
+  ) {
     return mockJsonResponse(config, {
       data: {
         access_token: "mock_access_token",
@@ -184,11 +198,19 @@ const mockAdapter = async (config) => {
     }
   }
 
-  if (method === "get" && (url === "/api/employees/department/" || url === "/api/employees/department")) {
+  if (
+    method === "get" &&
+    (url === "/api/employees/department/" ||
+      url === "/api/employees/department")
+  ) {
     return mockJsonResponse(config, { data: MOCK_DEPARTMENTS, status: 200 });
   }
 
-  if (method === "get" && (url === "/api/employees/statistics/" || url === "/api/employees/statistics")) {
+  if (
+    method === "get" &&
+    (url === "/api/employees/statistics/" ||
+      url === "/api/employees/statistics")
+  ) {
     return mockJsonResponse(config, {
       data: { total_employees: MOCK_EMPLOYEES.length, active: 2, in_active: 1 },
       status: 200,
@@ -244,16 +266,28 @@ const mockAdapter = async (config) => {
     });
   }
 
-  if (method === "post" && (url === "/api/projects/" || url === "/api/projects")) {
-    return mockJsonResponse(config, { data: { message: "Project created" }, status: 201 });
+  if (
+    method === "post" &&
+    (url === "/api/projects/" || url === "/api/projects")
+  ) {
+    return mockJsonResponse(config, {
+      data: { message: "Project created" },
+      status: 201,
+    });
   }
 
   if (method === "put" && url.startsWith("/api/projects/")) {
-    return mockJsonResponse(config, { data: { message: "Project updated" }, status: 200 });
+    return mockJsonResponse(config, {
+      data: { message: "Project updated" },
+      status: 200,
+    });
   }
 
   if (method === "delete" && url.startsWith("/api/projects/")) {
-    return mockJsonResponse(config, { data: { message: "Project deleted" }, status: 200 });
+    return mockJsonResponse(config, {
+      data: { message: "Project deleted" },
+      status: 200,
+    });
   }
 
   // Fallback: succeed with an empty response so screens can render.

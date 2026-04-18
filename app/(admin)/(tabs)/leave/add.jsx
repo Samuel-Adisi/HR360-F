@@ -1,25 +1,27 @@
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import {
-    BanknotesIcon,
-    BriefcaseIcon,
-    CalendarDaysIcon,
-    CheckCircleIcon,
-    ChevronDownIcon,
-    ClockIcon,
-    DocumentTextIcon,
-    ExclamationTriangleIcon,
-    FaceSmileIcon,
-    XCircleIcon,
+  ArrowLeftIcon,
+  BanknotesIcon,
+  BriefcaseIcon,
+  CalendarDaysIcon,
+  CheckCircleIcon,
+  ChevronDownIcon,
+  ClockIcon,
+  DocumentTextIcon,
+  ExclamationTriangleIcon,
+  FaceSmileIcon,
+  XCircleIcon,
 } from "react-native-heroicons/outline";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -330,6 +332,7 @@ function calcCalendarDays(start, end) {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ApplyLeaveScreen({ navigation }) {
+  const router = useRouter();
   const today = todayISO();
 
   const [form, setForm] = useState({
@@ -430,6 +433,13 @@ export default function ApplyLeaveScreen({ navigation }) {
                 <Text style={s.backChevron}>‹</Text>
               </Pressable>
             )}
+            {/* Back Button */}
+            <Pressable
+              onPress={() => router.replace("/leave")}
+              style={s.backBtn}
+            >
+              <ArrowLeftIcon size={20} color={C.navy} strokeWidth={2.5} />
+            </Pressable>
             <View style={s.iconBadge}>
               <DocumentTextIcon size={18} color={C.accent} strokeWidth={2} />
             </View>
@@ -713,6 +723,15 @@ const s = StyleSheet.create({
     borderColor: C.border,
     paddingHorizontal: 12,
     paddingVertical: 11,
+  },
+
+  backBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: C.divider,
+    alignItems: "center",
+    justifyContent: "center",
   },
   dateInputFilled: { borderColor: C.accent },
   dateInputText: { flex: 1, fontSize: 14, color: C.navy, fontWeight: "600" },

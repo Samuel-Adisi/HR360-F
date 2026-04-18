@@ -11,7 +11,6 @@ import {
   View,
 } from "react-native";
 import {
-  ArrowLeftIcon,
   BriefcaseIcon,
   CurrencyDollarIcon,
   EyeIcon,
@@ -19,7 +18,7 @@ import {
   MapPinIcon,
   PlusIcon,
   UserGroupIcon,
-  XMarkIcon,
+  XMarkIcon
 } from "react-native-heroicons/outline";
 import { BookmarkIcon } from "react-native-heroicons/solid";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -596,14 +595,6 @@ export default function JobPostingsScreen() {
       <SafeAreaView edges={["top"]} style={s.header}>
         <View style={s.titleRow}>
           <View style={s.titleLeft}>
-            {/* Back Button */}
-            <Pressable
-              onPress={() => router.replace("/dashboard")}
-              style={s.backBtn}
-            >
-              <ArrowLeftIcon size={20} color={C.navy} strokeWidth={2.5} />
-            </Pressable>
-
             <View style={s.iconBadge}>
               <BriefcaseIcon size={18} color={C.accent} strokeWidth={2} />
             </View>
@@ -709,9 +700,7 @@ export default function JobPostingsScreen() {
               <View key={job.id}>
                 <JobCard
                   job={job}
-                  onPress={() =>
-                    router.push(`/dashboard/recruitment/${job.id}`)
-                  }
+                  onPress={() => router.push(`/recruitment/${job.id}`)}
                 />
                 {i < filtered.length - 1 && <View style={s.cardSep} />}
               </View>

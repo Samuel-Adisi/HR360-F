@@ -49,10 +49,11 @@ export default function RootLayout() {
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen 
-            name="notifications" 
-            options={{ presentation: "modal" }} 
+          <Stack.Screen name="(employees)/(tabs)" />
+          <Stack.Screen name="(admin)/(tabs)" />
+          <Stack.Screen
+            name="notifications"
+            options={{ presentation: "modal" }}
           />
         </Stack>
         <AuthGate />

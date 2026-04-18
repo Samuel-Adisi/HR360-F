@@ -12,6 +12,7 @@ import {
 import {
   BanknotesIcon,
   BriefcaseIcon,
+  ArrowLeftIcon,
   BuildingOffice2Icon,
   CalendarDaysIcon,
   DevicePhoneMobileIcon,
@@ -269,7 +270,7 @@ export default function EmployeeDetailScreen() {
       <SafeAreaView edges={["top"]} style={s.navbar}>
         <Pressable
           style={({ pressed }) => [s.navBtn, pressed && { opacity: 0.6 }]}
-          onPress={() => router.replace("/employees")}
+          onPress={() => router.navigate("/employees")}
         >
           <Text style={s.backText}>‹</Text>
         </Pressable>

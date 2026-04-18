@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
@@ -9,6 +10,7 @@ import {
   View,
 } from "react-native";
 import {
+  ArrowLeftIcon,
   BellIcon,
   DevicePhoneMobileIcon,
   DocumentTextIcon,
@@ -19,8 +21,9 @@ import {
   LanguageIcon,
   LockClosedIcon,
   MoonIcon,
-  TrashIcon
+  TrashIcon,
 } from "react-native-heroicons/outline";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -152,6 +155,7 @@ function FormCard({ children }) {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function SettingsScreen() {
+  const router = useRouter();
   const [darkMode, setDarkMode] = useState(false);
   const [pushNotifs, setPushNotifs] = useState(true);
   const [emailNotifs, setEmailNotifs] = useState(false);
@@ -165,6 +169,20 @@ export default function SettingsScreen() {
 
   return (
     <View style={s.root}>
+      {/* Header */}
+      <SafeAreaView edges={["top"]} style={s.header}>
+        <View style={s.titleRow}>
+          <View style={s.titleLeft}>
+            <Pressable
+              onPress={() => router.navigate("/profile")}
+              style={s.backBtn}
+            >
+              <ArrowLeftIcon size={20} color={C.navy} strokeWidth={2.5} />
+            </Pressable>
+            <Text style={s.title}>Settings</Text>
+          </View>
+        </View>
+      </SafeAreaView>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.scroll}
@@ -384,6 +402,34 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
+  },
+
+  header: {
+    backgroundColor: C.white,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    paddingHorizontal: 20,
+    paddingBottom: 14,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingTop: 12,
+  },
+  titleLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: C.navy,
+    letterSpacing: -0.4,
+  },
+  backBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: C.divider,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   appInfo: {

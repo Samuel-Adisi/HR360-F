@@ -12,7 +12,6 @@ import {
   View,
 } from "react-native";
 import {
-  ArrowLeftIcon,
   BanknotesIcon,
   BriefcaseIcon,
   CalendarDaysIcon,
@@ -799,14 +798,6 @@ export default function LeaveScreen() {
       <SafeAreaView edges={["top"]} style={s.header}>
         <View style={s.titleRow}>
           <View style={s.titleLeft}>
-            {/* Back Button */}
-            <Pressable
-              onPress={() => router.replace("/dashboard")}
-              style={s.backBtn}
-            >
-              <ArrowLeftIcon size={20} color={C.navy} strokeWidth={2.5} />
-            </Pressable>
-
             <View style={s.iconBadge}>
               <DocumentTextIcon size={18} color={C.accent} strokeWidth={2} />
             </View>
@@ -819,7 +810,7 @@ export default function LeaveScreen() {
               s.addBtn,
               pressed && { opacity: 0.8, transform: [{ scale: 0.92 }] },
             ]}
-            onPress={() => navigation.navigate("ApplyLeave")}
+            onPress={() => router.push("/leave/add")}
           >
             <PlusCircleIcon size={18} color={C.white} strokeWidth={2.5} />
           </Pressable>
@@ -975,15 +966,6 @@ const sh = StyleSheet.create({
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
   scroll: { paddingBottom: 20 },
-
-  backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: C.divider,
-    alignItems: "center",
-    justifyContent: "center",
-  },
 
   header: {
     backgroundColor: C.white,

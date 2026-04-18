@@ -10,9 +10,20 @@ export default function Index() {
   useEffect(() => {
     const check = async () => {
       try {
+        const rolee = await AsyncStorage.setItem("user_role", "employee");
         const token = await AsyncStorage.getItem("access_token");
-        if (token) router.replace("/dashboard");
-        else router.replace("/login");
+        const role = await AsyncStorage.getItem("user_role");
+
+        if (!token) {
+          router.replace("/login");
+          return;
+        }
+
+        if (role === "employee") {
+          router.replace("/(employees)/(tabs)/dashboard");
+        } else {
+          router.replace("/(employees)/(tabs)/dashboard");
+        }
       } catch {
         router.replace("/login");
       } finally {

@@ -37,7 +37,8 @@ export default function LoginScreen() {
       await AsyncStorage.setItem("refresh_token", res.data.refresh_token);
       await AsyncStorage.setItem("username", res.data.user.username);
       await AsyncStorage.setItem("user", JSON.stringify(res.data.user));
-      router.replace("/dashboard");
+      await AsyncStorage.setItem("user_role", res.data.role);
+      router.replace("/(employees)/(tabs)/dashboard");
     } catch (e) {
       Alert.alert("Error", e?.response?.data?.message || "Login failed");
     } finally {
@@ -53,9 +54,7 @@ export default function LoginScreen() {
       >
         <View style={styles.card}>
           <Text style={[styles.title, serifText()]}>HR360</Text>
-          <Text style={[styles.subtitle, sansText()]}>
-            Sign in to continue
-          </Text>
+          <Text style={[styles.subtitle, sansText()]}>Sign in to continue</Text>
           <TextInput
             style={[styles.input, sansText()]}
             placeholder="Email"
@@ -75,7 +74,9 @@ export default function LoginScreen() {
             <TouchableOpacity
               style={styles.eye}
               onPress={() => setShowPassword((v) => !v)}
-              accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+              accessibilityLabel={
+                showPassword ? "Hide password" : "Show password"
+              }
             >
               <Ionicons
                 name={showPassword ? "eye-off-outline" : "eye-outline"}
