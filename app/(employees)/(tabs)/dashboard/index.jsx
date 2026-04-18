@@ -1,8 +1,9 @@
+// app/(tabs)/employee/dashboard.js
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -17,100 +18,40 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Circle, G, Svg } from "react-native-svg";
 import { VictoryAxis, VictoryBar, VictoryChart } from "victory";
+
+import {
+  EmptyState,
+  InsightCard,
+  LeaveBalanceBar,
+  NotifBadge,
+  PayslipModal,
+  Toast,
+  TrendBadge,
+} from "../../../../src/components/DashboardComponents";
+import { useDashboard } from "../../../../src/hooks/useDashboard";
 import { monoText, sansText, serifText } from "../../../../src/theme/fonts";
 
-// ─── Design Tokens ─────────────────────────────────────────────────────────
+// ─── Design Tokens ──────────────────────────────────────────────────────────
 const ACCENT = "#0F766E";
 const TEAL_MID = "#99F6E4";
 const NAVY = "#0F172A";
 const NAVY_MID = "#1E293B";
 const ORANGE = "#F97316";
-const ORANGE_LIGHT = "#FFF7ED";
 const BLUE = "#0A66C2";
-const BLUE_LIGHT = "#EFF6FF";
 const GREEN = "#059669";
 const GREEN_LIGHT = "#ECFDF5";
 const RED = "#DC2626";
 const RED_LIGHT = "#FEF2F2";
 const PURPLE = "#7C3AED";
-const PURPLE_LIGHT = "#F5F3FF";
 const AMBER = "#F59E0B";
 const AMBER_LIGHT = "#FFFBEB";
 const BORDER = "#E2E8F0";
 const MUTED = "#64748B";
 const SURFACE = "#FFFFFF";
 const BG = "#F8FAFC";
-
 const { width: SCREEN_W } = Dimensions.get("window");
 
-// ─── MOCK DATA (replace fetchDashboard with real API when ready) ────────────
-const MOCK_DASHBOARD = {
-  user: {
-    name: "Addison Adisi",
-    role: "Employee",
-    employee_id: "EMP-0042",
-    department: { name: "Engineering" },
-  },
-  today: {
-    status: "Present",
-    is_on_leave: false,
-    check_in: "08:32:00",
-    check_out: null,
-    hours_worked: 4.5,
-  },
-  attendance: {
-    days_present: 18,
-    days_absent: 2,
-    days_late: 3,
-    days_on_leave: 1,
-    total_hours_worked: 144,
-    attendance_rate: 82,
-  },
-  leave: {
-    pending: 1,
-    approved: 3,
-    active_leave: null, // set to { leave_type: "Annual Leave", end_date: "2025-05-10" } to test banner
-    recent: [
-      {
-        id: 1,
-        leave_type: "Annual Leave",
-        start_date: "2025-04-01",
-        end_date: "2025-04-03",
-        status: "approved",
-      },
-      {
-        id: 2,
-        leave_type: "Sick Leave",
-        start_date: "2025-04-15",
-        end_date: "2025-04-15",
-        status: "pending",
-      },
-    ],
-  },
-  payroll: {
-    latest_net_pay: 4850.0,
-    latest_pay_status: "paid",
-    latest_pay_period: "April 2025",
-    latest_pay_date: "Apr 30, 2025",
-  },
-};
-
-// ─── API (swap mock for real fetch when backend is ready) ───────────────────
-async function fetchDashboard() {
-  // TODO: replace with real API call:
-  // const token = await AsyncStorage.getItem("access_token");
-  // const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/dashboard/`, {
-  //   headers: { Authorization: `Bearer ${token}` },
-  // });
-  // if (!res.ok) throw new Error("Failed");
-  // return res.json();
-
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 800));
-  return MOCK_DASHBOARD;
-}
-
-// ─── Helpers ───────────────────────────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────────────────────
 const greeting = () => {
   const h = new Date().getHours();
   return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
@@ -156,10 +97,11 @@ const payMeta = (s) =>
     on_hold: { color: RED, label: "ON HOLD" },
   })[s?.toLowerCase()] ?? { color: MUTED, label: s?.toUpperCase() ?? "—" };
 
-// ─── Animated Blob Rings ────────────────────────────────────────────────────
+// ─── Blob Rings ──────────────────────────────────────────────────────────────
 function BlobRings() {
   const a1 = useRef(new Animated.Value(0)).current;
   const a2 = useRef(new Animated.Value(0)).current;
+  const { useEffect } = require("react");
   useEffect(() => {
     const pulse = (a, delay) =>
       Animated.loop(
@@ -203,14 +145,15 @@ function BlobRings() {
   );
 }
 
-// ─── SVG Donut KPI Chip ─────────────────────────────────────────────────────
-const RING_SIZE = 70;
-const STROKE = 7;
+// ─── KPI Chip ────────────────────────────────────────────────────────────────
+const RING_SIZE = 70,
+  STROKE = 7;
 const R_SVG = (RING_SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * R_SVG;
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 function KpiChip({ label, value, pct, color }) {
+  const { useEffect, useRef } = require("react");
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(anim, {
@@ -263,7 +206,7 @@ function KpiChip({ label, value, pct, color }) {
   );
 }
 
-// ─── Section Label ──────────────────────────────────────────────────────────
+// ─── Section Label ───────────────────────────────────────────────────────────
 function SectionLabel({ title, subtitle, badge, actionLabel, onAction }) {
   return (
     <View style={s.sectionRow}>
@@ -291,29 +234,58 @@ function SectionLabel({ title, subtitle, badge, actionLabel, onAction }) {
   );
 }
 
-// ─── Quick Action ───────────────────────────────────────────────────────────
-function QuickAction({ label, iconName, color, onPress }) {
+// ─── Quick Action ────────────────────────────────────────────────────────────
+function QuickAction({
+  label,
+  iconName,
+  color,
+  onPress,
+  disabled,
+  loading: qaLoading,
+  badge,
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const onPressIn = () =>
+    Animated.spring(scale, { toValue: 0.92, useNativeDriver: true }).start();
+  const onPressOut = () =>
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
   return (
     <Pressable
       onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        onPress?.();
+        if (!disabled && !qaLoading) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          onPress?.();
+        }
       }}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
       style={({ pressed }) => [
         s.qaBtn,
-        pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] },
+        (disabled || qaLoading) && { opacity: 0.55 },
       ]}
     >
-      <View style={[s.qaIcon, { backgroundColor: color }]}>
-        <Ionicons name={iconName} size={24} color="#FFFFFF" />
-      </View>
+      <Animated.View style={{ transform: [{ scale }] }}>
+        <View style={[s.qaIcon, { backgroundColor: color }]}>
+          {qaLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Ionicons name={iconName} size={24} color="#FFFFFF" />
+          )}
+          {badge ? (
+            <View style={s.qaBadge}>
+              <Text style={s.qaBadgeText}>{badge}</Text>
+            </View>
+          ) : null}
+        </View>
+      </Animated.View>
       <Text style={[s.qaLabel, sansText()]}>{label}</Text>
     </Pressable>
   );
 }
 
-// ─── Animated Count-Up ──────────────────────────────────────────────────────
+// ─── Count Up ─────────────────────────────────────────────────────────────────
 function CountUp({ value, style, suffix = "" }) {
+  const { useEffect, useRef, useState } = require("react");
   const anim = useRef(new Animated.Value(0)).current;
   const [display, setDisplay] = useState(0);
   useEffect(() => {
@@ -334,7 +306,7 @@ function CountUp({ value, style, suffix = "" }) {
   );
 }
 
-// ─── Active Leave Banner ────────────────────────────────────────────────────
+// ─── Active Leave Banner ──────────────────────────────────────────────────────
 function ActiveLeaveBanner({ activeLeave }) {
   if (!activeLeave?.leave_type) return null;
   return (
@@ -364,13 +336,12 @@ function ActiveLeaveBanner({ activeLeave }) {
   );
 }
 
-// ─── Today Status Card ──────────────────────────────────────────────────────
+// ─── Today Status Card ────────────────────────────────────────────────────────
 function TodayStatusCard({ today }) {
   const pct = Math.min((today.hours_worked ?? 0) / 8, 1);
   const arcColor = pct >= 1 ? GREEN : pct > 0.5 ? ACCENT : AMBER;
-  const ARC_R = 33;
-  const ARC_CIRC = 2 * Math.PI * ARC_R;
-
+  const ARC_R = 33,
+    ARC_CIRC = 2 * Math.PI * ARC_R;
   return (
     <View style={[s.card, { padding: 16 }]}>
       <View style={s.todayTopRow}>
@@ -400,7 +371,6 @@ function TodayStatusCard({ today }) {
         </View>
         <Text style={[s.statusDateLabel, sansText()]}>Today</Text>
       </View>
-
       <View style={s.todayBody}>
         <View
           style={{
@@ -445,7 +415,6 @@ function TodayStatusCard({ today }) {
             <Text style={[{ fontSize: 9, color: MUTED }, sansText()]}>hrs</Text>
           </View>
         </View>
-
         <View style={{ flex: 1, gap: 10 }}>
           <View style={s.timingRow}>
             <View style={[s.timingDot, { backgroundColor: GREEN_LIGHT }]}>
@@ -477,7 +446,6 @@ function TodayStatusCard({ today }) {
           </View>
         </View>
       </View>
-
       <View
         style={{
           marginTop: 14,
@@ -527,7 +495,7 @@ function TodayStatusCard({ today }) {
   );
 }
 
-// ─── Attendance Chart ───────────────────────────────────────────────────────
+// ─── Attendance Chart ─────────────────────────────────────────────────────────
 function AttendanceChart({ attendance }) {
   const chartData = [
     { x: "Present", y: attendance.days_present ?? 0, fill: ACCENT },
@@ -537,13 +505,19 @@ function AttendanceChart({ attendance }) {
   ];
   return (
     <View style={s.card}>
-      <View style={s.chartLegendRow}>
-        {chartData.map((d) => (
-          <View key={d.x} style={s.legendItem}>
-            <View style={[s.legendDot, { backgroundColor: d.fill }]} />
-            <Text style={[s.legendText, sansText()]}>{d.x}</Text>
-          </View>
-        ))}
+      <View style={s.chartHeaderRow}>
+        <View style={s.chartLegendRow}>
+          {chartData.map((d) => (
+            <View key={d.x} style={s.legendItem}>
+              <View style={[s.legendDot, { backgroundColor: d.fill }]} />
+              <Text style={[s.legendText, sansText()]}>{d.x}</Text>
+            </View>
+          ))}
+        </View>
+        <TrendBadge
+          current={attendance.attendance_rate ?? 0}
+          previous={attendance.last_month_rate ?? 0}
+        />
       </View>
       <VictoryChart
         width={SCREEN_W - 64}
@@ -587,7 +561,7 @@ function AttendanceChart({ attendance }) {
   );
 }
 
-// ─── Stat Row ───────────────────────────────────────────────────────────────
+// ─── Stat Row ─────────────────────────────────────────────────────────────────
 function StatRow({ icon, iconColor, iconBg, label, value, last }) {
   return (
     <View
@@ -608,7 +582,7 @@ function StatRow({ icon, iconColor, iconBg, label, value, last }) {
   );
 }
 
-// ─── Leave Row ──────────────────────────────────────────────────────────────
+// ─── Leave Row ────────────────────────────────────────────────────────────────
 function LeaveRow({ item, last }) {
   const { color, bg } = leaveMeta(item.status);
   return (
@@ -639,7 +613,7 @@ function LeaveRow({ item, last }) {
   );
 }
 
-// ─── Activity Row ───────────────────────────────────────────────────────────
+// ─── Activity Row ─────────────────────────────────────────────────────────────
 function ActivityRow({ icon, color, text, sub, time, last }) {
   return (
     <View
@@ -663,9 +637,9 @@ function ActivityRow({ icon, color, text, sub, time, last }) {
   );
 }
 
-// ─── Payroll Card ───────────────────────────────────────────────────────────
-function PayrollCard({ payroll, onPress }) {
-  const pm = payMeta(payroll.latest_pay_status);
+// ─── Payroll Card ─────────────────────────────────────────────────────────────
+function PayrollCard({ payroll, onPress, onViewPayslip }) {
+  const pm = payMeta(payroll?.latest_pay_status);
   return (
     <Pressable
       onPress={onPress}
@@ -679,7 +653,6 @@ function PayrollCard({ payroll, onPress }) {
       >
         <View style={s.payBlob1} />
         <View style={s.payBlob2} />
-
         <View style={s.payRow1}>
           <View style={s.payIconBox}>
             <Ionicons name="cash-outline" size={22} color={TEAL_MID} />
@@ -694,76 +667,87 @@ function PayrollCard({ payroll, onPress }) {
             ]}
           >
             <View
-              style={[
-                {
-                  width: 7,
-                  height: 7,
-                  borderRadius: 4,
-                  backgroundColor: pm.color,
-                },
-              ]}
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: 4,
+                backgroundColor: pm.color,
+              }}
             />
             <Text style={[s.payStatusText, sansText(), { color: pm.color }]}>
               {pm.label}
             </Text>
           </View>
         </View>
-
         <View style={s.payRow2}>
           <Text style={[s.payMicroLabel, sansText()]}>NET PAY</Text>
           <Text style={[s.payAmount, monoText()]}>
-            {fmtCurrency(payroll.latest_net_pay)}
+            {fmtCurrency(payroll?.latest_net_pay)}
           </Text>
         </View>
-
         <View style={s.payDivider} />
-
         <View style={s.payRow3}>
           <View style={{ flex: 1 }}>
             <Text style={[s.payMetaLabel, sansText()]}>Pay Period</Text>
             <Text style={[s.payMetaValue, sansText()]}>
-              {payroll.latest_pay_period ?? "—"}
+              {payroll?.latest_pay_period ?? "—"}
             </Text>
           </View>
           <View style={s.payMetaSep} />
           <View style={{ flex: 1, alignItems: "flex-end" }}>
             <Text style={[s.payMetaLabel, sansText()]}>Pay Date</Text>
             <Text style={[s.payMetaValue, sansText()]}>
-              {payroll.latest_pay_date ?? "—"}
+              {payroll?.latest_pay_date ?? "—"}
             </Text>
           </View>
         </View>
-
-        <View style={s.payCtaRow}>
-          <Text style={[s.payCtaText, sansText()]}>View full payslip</Text>
-          <Ionicons
-            name="arrow-forward-circle-outline"
-            size={18}
-            color={TEAL_MID}
-          />
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <Pressable
+            onPress={onViewPayslip}
+            style={({ pressed }) => [
+              s.payCtaRow,
+              { flex: 1 },
+              pressed && { opacity: 0.8 },
+            ]}
+          >
+            <Ionicons name="document-text-outline" size={16} color={TEAL_MID} />
+            <Text style={[s.payCtaText, sansText()]}>View Payslip</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [s.payCtaRow, pressed && { opacity: 0.8 }]}
+          >
+            <Ionicons name="download-outline" size={16} color={TEAL_MID} />
+          </Pressable>
         </View>
       </LinearGradient>
     </Pressable>
   );
 }
 
-// ─── Main Screen ────────────────────────────────────────────────────────────
+// ─── MAIN SCREEN ─────────────────────────────────────────────────────────────
 export default function EmployeeDashboard() {
   const router = useRouter();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
+  const {
+    data,
+    loading,
+    refreshing,
+    onRefresh,
+    sectionErrors,
+    clockLoading,
+    handleClock,
+    toast,
+    insights,
+    notifications,
+    unreadCount,
+  } = useDashboard();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
+  const [payslipVisible, setPayslipVisible] = useState(false);
 
-  const load = useCallback(async (isRefresh = false) => {
-    try {
-      if (!isRefresh) setLoading(true);
-      const result = await fetchDashboard();
-      setData(result);
-      setError(null);
+  const { useEffect } = require("react");
+  useEffect(() => {
+    if (!loading && data) {
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -776,22 +760,8 @@ export default function EmployeeDashboard() {
           useNativeDriver: true,
         }),
       ]).start();
-    } catch {
-      setError("Could not load dashboard. Check your connection.");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
     }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    load(true);
-  }, [load]);
+  }, [loading, data]);
 
   if (loading) {
     return (
@@ -802,7 +772,7 @@ export default function EmployeeDashboard() {
     );
   }
 
-  if (error) {
+  if (sectionErrors.dashboard && !data) {
     return (
       <View style={[s.loadScreen, { backgroundColor: BG }]}>
         <Ionicons name="wifi-outline" size={44} color={MUTED} />
@@ -812,13 +782,8 @@ export default function EmployeeDashboard() {
             sansText(),
           ]}
         >
-          {error}
+          {sectionErrors.dashboard}
         </Text>
-        <Pressable onPress={() => load()} style={s.retryBtn}>
-          <Text style={[{ color: ACCENT, fontWeight: "600" }, sansText()]}>
-            Retry
-          </Text>
-        </Pressable>
       </View>
     );
   }
@@ -833,6 +798,7 @@ export default function EmployeeDashboard() {
   const pm = payMeta(payroll.latest_pay_status);
   const rate = attendance.attendance_rate ?? 0;
   const rateColor = rate >= 80 ? GREEN : rate >= 60 ? AMBER : RED;
+  const isClockedIn = today.is_clocked_in ?? false;
   const initials = (user.name ?? "—")
     .split(" ")
     .map((n) => n[0])
@@ -901,6 +867,17 @@ export default function EmployeeDashboard() {
       end={{ x: 0, y: 0.6 }}
       style={s.screen}
     >
+      {/* Toast */}
+      <Toast toast={toast} />
+
+      {/* Payslip Modal */}
+      <PayslipModal
+        visible={payslipVisible}
+        onClose={() => setPayslipVisible(false)}
+        payroll={payroll}
+        fmtCurrency={fmtCurrency}
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.scrollContent}
@@ -915,7 +892,7 @@ export default function EmployeeDashboard() {
           />
         }
       >
-        {/* ══ HERO ════════════════════════════════════════════════════════ */}
+        {/* ══ HERO ══════════════════════════════════════════════════════════ */}
         <View style={s.heroContainer}>
           <BlobRings />
           <SafeAreaView edges={["top"]} style={s.heroSafe}>
@@ -950,7 +927,6 @@ export default function EmployeeDashboard() {
                 ) : null}
                 <Text style={[s.heroDate, sansText()]}>{fmtDate()}</Text>
               </View>
-
               <View style={s.heroActions}>
                 <Pressable
                   onPress={() => {
@@ -968,6 +944,7 @@ export default function EmployeeDashboard() {
                       size={21}
                       color="#FFFFFF"
                     />
+                    <NotifBadge count={unreadCount} />
                   </View>
                 </Pressable>
                 <Pressable
@@ -983,7 +960,6 @@ export default function EmployeeDashboard() {
                 </Pressable>
               </View>
             </View>
-
             <Animated.View
               style={[
                 s.kpiRow,
@@ -997,7 +973,7 @@ export default function EmployeeDashboard() {
           </SafeAreaView>
         </View>
 
-        {/* ══ CONTENT SHEET ══════════════════════════════════════════════ */}
+        {/* ══ SHEET ════════════════════════════════════════════════════════ */}
         <Animated.View
           style={[
             s.sheet,
@@ -1006,6 +982,7 @@ export default function EmployeeDashboard() {
         >
           <ActiveLeaveBanner activeLeave={leave.active_leave} />
 
+          {/* Quick Actions */}
           <SectionLabel title="Quick Actions" />
           <ScrollView
             horizontal
@@ -1018,10 +995,12 @@ export default function EmployeeDashboard() {
           >
             <View style={{ width: 16 }} />
             <QuickAction
-              label="Clock In/Out"
-              iconName="finger-print"
-              color={ACCENT}
-              onPress={() => router.push("/attendance/checkin")}
+              label={isClockedIn ? "Clock Out" : "Clock In"}
+              iconName={isClockedIn ? "exit-outline" : "finger-print"}
+              color={isClockedIn ? RED : ACCENT}
+              onPress={handleClock}
+              loading={clockLoading}
+              disabled={clockLoading}
             />
             <QuickAction
               label="Request Leave"
@@ -1052,13 +1031,33 @@ export default function EmployeeDashboard() {
               iconName="megaphone"
               color={ORANGE}
               onPress={() => router.push("/announcements")}
+              badge={unreadCount > 0 ? unreadCount : null}
             />
             <View style={{ width: 8 }} />
           </ScrollView>
 
+          {/* Today's Status */}
           <SectionLabel title="Today's Status" subtitle={fmtDate()} />
           <TodayStatusCard today={today} />
 
+          {/* Insights */}
+          {insights.length > 0 && (
+            <>
+              <SectionLabel title="Smart Insights" />
+              <View style={s.card}>
+                {insights.map((ins, i) => (
+                  <InsightCard
+                    key={i}
+                    {...ins}
+                    index={i}
+                    last={i === insights.length - 1}
+                  />
+                ))}
+              </View>
+            </>
+          )}
+
+          {/* Attendance Summary */}
           <SectionLabel
             title="Attendance Summary"
             subtitle="Last 30 days"
@@ -1067,6 +1066,7 @@ export default function EmployeeDashboard() {
           />
           <AttendanceChart attendance={attendance} />
 
+          {/* Attendance Rate */}
           <SectionLabel title="Attendance Rate" />
           <Pressable
             onPress={() => router.push("/attendance")}
@@ -1084,6 +1084,10 @@ export default function EmployeeDashboard() {
                 value={rate}
                 style={[s.rateValue, monoText(), { color: rateColor }]}
                 suffix="%"
+              />
+              <TrendBadge
+                current={rate}
+                previous={attendance.last_month_rate ?? 0}
               />
               <View style={s.rateTrack}>
                 <View
@@ -1146,12 +1150,14 @@ export default function EmployeeDashboard() {
             />
           </View>
 
+          {/* Leave Overview */}
           <SectionLabel
             title="Leave Overview"
             badge={leave.pending}
             actionLabel="See all"
             onAction={() => router.push("/leave")}
           />
+          <LeaveBalanceBar used={leave.used_days} total={leave.total_days} />
           <View style={s.twoCol}>
             <Pressable
               onPress={() => router.push("/leave/apply")}
@@ -1181,7 +1187,6 @@ export default function EmployeeDashboard() {
                 </Text>
               </LinearGradient>
             </Pressable>
-
             <Pressable
               onPress={() => router.push("/leave")}
               style={({ pressed }) => [
@@ -1214,46 +1219,69 @@ export default function EmployeeDashboard() {
             </Pressable>
           </View>
 
-          {(leave.recent?.length ?? 0) > 0 && (
-            <>
-              <SectionLabel title="Recent Requests" />
-              <View style={s.card}>
-                {leave.recent.map((item, i) => (
-                  <LeaveRow
-                    key={item.id ?? i}
-                    item={item}
-                    last={i === leave.recent.length - 1}
-                  />
-                ))}
-              </View>
-            </>
-          )}
+          {/* Recent Leave Requests */}
+          <SectionLabel title="Recent Requests" />
+          <View style={s.card}>
+            {(leave.recent?.length ?? 0) === 0 ? (
+              <EmptyState
+                icon="calendar-outline"
+                title="No leave requests yet"
+                subtitle="Your leave history will appear here"
+              />
+            ) : (
+              leave.recent.map((item, i) => (
+                <LeaveRow
+                  key={item.id ?? i}
+                  item={item}
+                  last={i === leave.recent.length - 1}
+                />
+              ))
+            )}
+          </View>
 
+          {/* Payroll */}
           <SectionLabel
             title="Latest Payroll"
             actionLabel="All payslips"
             onAction={() => router.push("/payslips")}
           />
-          <PayrollCard
-            payroll={payroll}
-            onPress={() => router.push("/payslips")}
-          />
-
-          {activityFeed.length > 0 && (
-            <>
-              <SectionLabel title="Recent Activity" />
-              <View style={s.card}>
-                {activityFeed.map((item, i) => (
-                  <ActivityRow
-                    key={item.id}
-                    {...item}
-                    last={i === activityFeed.length - 1}
-                  />
-                ))}
-              </View>
-            </>
+          {payroll.latest_net_pay == null ? (
+            <View style={s.card}>
+              <EmptyState
+                icon="cash-outline"
+                title="No payroll data available"
+                subtitle="Your payslip will appear here once processed"
+              />
+            </View>
+          ) : (
+            <PayrollCard
+              payroll={payroll}
+              onPress={() => router.push("/payslips")}
+              onViewPayslip={() => setPayslipVisible(true)}
+            />
           )}
 
+          {/* Activity Feed */}
+          <SectionLabel title="Recent Activity" />
+          <View style={s.card}>
+            {activityFeed.length === 0 ? (
+              <EmptyState
+                icon="pulse-outline"
+                title="No recent activity"
+                subtitle="Your actions will appear here"
+              />
+            ) : (
+              activityFeed.map((item, i) => (
+                <ActivityRow
+                  key={item.id}
+                  {...item}
+                  last={i === activityFeed.length - 1}
+                />
+              ))
+            )}
+          </View>
+
+          {/* Profile */}
           <SectionLabel title="My Profile" />
           <Pressable
             onPress={() => router.push("/profile")}
@@ -1292,7 +1320,7 @@ export default function EmployeeDashboard() {
 // ─── Styles ──────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   screen: { flex: 1 },
-  scrollContent: { flexGrow: 1 },
+  scrollContent: { flexGrow: 1, paddingBottom: 80 },
   loadScreen: {
     flex: 1,
     alignItems: "center",
@@ -1300,14 +1328,6 @@ const s = StyleSheet.create({
     gap: 14,
   },
   loadText: { color: "rgba(255,255,255,0.5)", fontSize: 13 },
-  retryBtn: {
-    marginTop: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: ACCENT,
-  },
   heroContainer: { overflow: "hidden", paddingBottom: 28 },
   heroSafe: { paddingHorizontal: 20, paddingTop: 8 },
   heroTopRow: {
@@ -1431,7 +1451,7 @@ const s = StyleSheet.create({
   sheet: {
     paddingHorizontal: 16,
     paddingTop: 20,
-    paddingBottom: 40,
+    paddingBottom: 0,
     backgroundColor: BG,
   },
   sectionRow: {
@@ -1513,6 +1533,19 @@ const s = StyleSheet.create({
     color: "#334155",
     textAlign: "center",
   },
+  qaBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    backgroundColor: RED,
+    borderRadius: 9,
+    minWidth: 16,
+    height: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
+  },
+  qaBadgeText: { fontSize: 9, fontWeight: "700", color: "#fff" },
   todayTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1541,12 +1574,13 @@ const s = StyleSheet.create({
   },
   timingLabel: { fontSize: 10, color: MUTED, marginBottom: 1 },
   timingValue: { fontSize: 14, fontWeight: "700", color: NAVY },
-  chartLegendRow: {
-    flexDirection: "row",
-    gap: 16,
-    padding: 14,
+  chartHeaderRow: {
+    paddingHorizontal: 14,
+    paddingTop: 14,
     paddingBottom: 4,
+    gap: 8,
   },
+  chartLegendRow: { flexDirection: "row", gap: 16 },
   legendItem: { flexDirection: "row", alignItems: "center", gap: 4 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
   legendText: { fontSize: 11, color: MUTED },
