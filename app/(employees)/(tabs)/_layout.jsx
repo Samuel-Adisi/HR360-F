@@ -14,7 +14,7 @@ import { FloatingTabBar } from "../../../src/components/FloatingTabBar";
 import { BRAND_TEAL } from "../../../src/theme/navigationTheme";
 
 export const unstable_settings = {
-  initialRouteName: "dashboard11",
+  initialRouteName: "dashboard",
 };
 
 function NativeShell() {
