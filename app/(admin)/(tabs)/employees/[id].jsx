@@ -12,7 +12,6 @@ import {
 import {
   BanknotesIcon,
   BriefcaseIcon,
-  ArrowLeftIcon,
   BuildingOffice2Icon,
   CalendarDaysIcon,
   DevicePhoneMobileIcon,
@@ -23,7 +22,7 @@ import {
   PencilSquareIcon,
   PhoneIcon,
   UserCircleIcon,
-  UserIcon,
+  UserIcon
 } from "react-native-heroicons/outline";
 import { SafeAreaView } from "react-native-safe-area-context";
 

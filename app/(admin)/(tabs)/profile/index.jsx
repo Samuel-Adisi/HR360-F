@@ -211,7 +211,7 @@ export default function ProfileHome() {
             "username",
             "user",
           ]);
-          router.replace("/login");
+          router.navigate("/(auth)/login");
         },
       },
     ]);
